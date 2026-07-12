@@ -7,8 +7,8 @@
 
 const OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-// Thời gian cho mỗi câu (giây). 1.2 phút = 72 giây. Đổi tại đây nếu muốn.
-const SEC_PER_QUESTION = 72;
+// Thời gian cho mỗi câu (giây). 1 phút = 60 giây. Đổi tại đây nếu muốn.
+const SEC_PER_QUESTION = 60;
 
 // ---- localStorage keys ----
 const LS_PROGRESS = 'mad101.progress.v1'; // { [examId]: {done, bestScore, lastScore, lastTimeSec, attempts, lastAt} }
@@ -100,6 +100,26 @@ function submitResultToSheet(payload) {
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
   }).then(() => true).catch(() => false);
+}
+
+// ---------- chọn ngẫu nhiên phân bố đều ----------
+// Lấy `per` phần tử ngẫu nhiên trong mỗi khối `block` phần tử liên tiếp,
+// giữ nguyên thứ tự gốc. Ví dụ pickDistributed(images, 2, 10):
+//   10 câu đầu random 2 câu, 10 câu sau random 2 câu, ...
+function pickDistributed(arr, per, block) {
+  const out = [];
+  for (let start = 0; start < arr.length; start += block) {
+    const chunk = arr.slice(start, start + block);
+    const idxs = chunk.map((_, i) => i);
+    // xáo trộn Fisher–Yates rồi lấy `per` chỉ số đầu, sắp lại theo thứ tự gốc
+    for (let i = idxs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [idxs[i], idxs[j]] = [idxs[j], idxs[i]];
+    }
+    idxs.slice(0, Math.min(per, chunk.length)).sort((a, b) => a - b)
+      .forEach(i => out.push(chunk[i]));
+  }
+  return out;
 }
 
 // ---------- format ----------

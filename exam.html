@@ -61,6 +61,7 @@ document.getElementById('top').outerHTML = renderTopbar('');
 const params = new URLSearchParams(location.search);
 const EXAM_ID = params.get('exam');
 const REVIEW = params.get('review') === '1';
+const MODE = params.get('mode');   // 'r20' = random ~20 câu (2 câu/10 câu); null = làm full
 
 let MANIFEST, ANSWERS, EXAM, KEY;
 const picks = {};        // { 'NN.jpg': 'A' }
@@ -142,6 +143,8 @@ function saveState() {
     flags: [...flags],
     elapsedSec,
     total: EXAM.count,
+    mode: MODE === 'r20' ? 'r20' : 'full',
+    subset: EXAM.images.slice(),   // để vào lại giữ đúng bộ câu (nhất là khi random)
     savedAt: new Date().toISOString(),
   });
 }
@@ -222,6 +225,8 @@ function gradeAndShow(timeSec, persist) {
       total: EXAM.count, correct, score, timeSec,
       finishedAt,
       picks: { ...picks },
+      mode: MODE === 'r20' ? 'r20' : 'full',
+      images: EXAM.images.slice(),   // đúng bộ câu đã làm (để xem lại chuẩn khi random)
     };
     saveResult(result);
     toast('Đã lưu kết quả');
@@ -233,6 +238,7 @@ function gradeAndShow(timeSec, persist) {
       submitResultToSheet({
         name: student.name, mssv: student.mssv,
         section: EXAM.section, examName: EXAM.name, examId: EXAM_ID,
+        mode: MODE === 'r20' ? `Random ${EXAM.count} câu` : 'Full',
         score, correct, total: EXAM.count,
         timeSec: Math.round(timeSec), timeMMSS: fmtTime(timeSec), finishedAt,
         details,                                                  // chi tiết từng câu
@@ -265,10 +271,31 @@ function submit() {
   EXAM = findExam(MANIFEST, EXAM_ID);
   if (!EXAM) { document.getElementById('title').textContent = 'Không tìm thấy đề: ' + EXAM_ID; return; }
   KEY = ANSWERS[EXAM_ID] || {};
+
+  // ---- Xác định danh sách câu sẽ làm: full, random ~20 câu, hoặc xem lại ----
+  const fullImages = EXAM.images.slice();
+  const savedState = getInProgress(EXAM_ID);
+  const lastResult = REVIEW ? getResults().find(r => r.examId === EXAM_ID) : null;
+
+  if (REVIEW && lastResult && Array.isArray(lastResult.images) && lastResult.images.length) {
+    // Xem lại đúng bộ câu của lần làm gần nhất (nếu lần đó là random)
+    EXAM.images = lastResult.images.filter(im => fullImages.includes(im));
+    EXAM.count = EXAM.images.length;
+  } else if (!REVIEW && MODE === 'r20') {
+    let subset;
+    if (savedState && savedState.mode === 'r20' && Array.isArray(savedState.subset) && savedState.subset.length) {
+      subset = savedState.subset.filter(im => fullImages.includes(im)); // giữ đúng bộ đang làm dở
+    }
+    if (!subset || !subset.length) subset = pickDistributed(fullImages, 2, 10);
+    EXAM.images = subset;
+    EXAM.count = subset.length;
+  }
+
   TOTAL_SEC = EXAM.count * SEC_PER_QUESTION;
 
   document.getElementById('title').textContent = EXAM.name;
-  document.getElementById('subtitle').textContent = `${EXAM.section} · ${EXAM.count} câu · ⏱ ${fmtTime(TOTAL_SEC)} (${SEC_PER_QUESTION/60} phút/câu)` +
+  const modeNote = (MODE === 'r20' && !REVIEW) ? ` · 🎲 Random ${EXAM.count} câu (2 câu/10 câu)` : '';
+  document.getElementById('subtitle').textContent = `${EXAM.section} · ${EXAM.count} câu${modeNote} · ⏱ ${fmtTime(TOTAL_SEC)} (${SEC_PER_QUESTION/60} phút/câu)` +
     (Object.keys(KEY).length ? '' : ' · ⚠ chưa có đáp án');
 
   const qWrap = document.getElementById('questions');
