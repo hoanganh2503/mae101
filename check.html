@@ -65,8 +65,14 @@
       </div>
     </div>
 
-    <div id="scoreSummary" style="margin-top:14px"></div>
-    <div id="questions"></div>
+    <div class="qwrap" style="margin-top:16px">
+      <aside class="sidebar">
+        <div class="card" id="sidebar">
+          <div class="muted small">Chọn đề, dán đáp án rồi bấm <b>Chấm bài</b> để xem ma trận câu.</div>
+        </div>
+      </aside>
+      <div id="questions"></div>
+    </div>
   </div>
 </div>
 
@@ -152,6 +158,7 @@ function grade() {
   document.getElementById('parseInfo').textContent = `Đọc được ${hits}/${ex.count} câu (kiểu: ${mode})`;
 
   let correct = 0, answered = 0;
+  const navCls = [];   // class cho từng ô ma trận
   const cards = ex.images.map((img, i) => {
     const n = i + 1;
     const pick = picks[n] || '';
@@ -159,6 +166,9 @@ function grade() {
     if (pick) answered++;
     const ok = ans && pick === ans;
     if (ok) correct++;
+
+    // màu ô ma trận: đúng=xanh, sai=đỏ; chưa có đáp án thì xanh dương nếu đã chọn
+    navCls[i] = !ans ? (pick ? 'answered' : '') : (ok ? 'correct' : 'wrong');
 
     let mark;
     if (!ans) mark = '<span class="muted">— chưa có đáp án</span>';
@@ -169,7 +179,7 @@ function grade() {
 
     const cardCls = !ans ? '' : (ok ? 'correct' : 'wrong');
     return `
-    <div class="qcard ${cardCls}">
+    <div class="qcard ${cardCls}" id="q-${n}" style="scroll-margin-top:76px">
       <div class="qhead">
         <span class="qnum">Câu ${n}<span class="muted">/${ex.count}</span></span>
         <span class="small">${mark}</span>
@@ -182,16 +192,23 @@ function grade() {
   }).join('');
 
   const score = pct(correct, ex.count);
-  document.getElementById('scoreSummary').innerHTML = hasKey
-    ? `<div class="card"><div class="scorebox">
-         <div class="muted small">Kết quả · ${ex.name}</div>
+  const navHtml = ex.images.map((img, i) =>
+    `<a href="#q-${i + 1}" class="${navCls[i]}" title="Câu ${i + 1}">${i + 1}</a>`).join('');
+
+  document.getElementById('sidebar').innerHTML = (hasKey
+    ? `<div class="scorebox">
+         <div class="muted small">Kết quả</div>
          <div class="big">${score}%</div>
-         <div class="small">${correct}/${ex.count} câu đúng · đã chọn ${answered}/${ex.count} câu</div>
-       </div></div>`
-    : `<div class="card"><div class="small" style="color:var(--amber)">Đề này chưa nhập đáp án nên chưa chấm được. Vào <a href="admin.html">Quản lý đáp án</a> để đặt trước.</div></div>`;
+         <div class="small">${correct}/${ex.count} câu đúng</div>
+         <div class="muted small">Đã chọn ${answered}/${ex.count} câu</div>
+       </div>`
+    : `<div class="small" style="color:var(--amber)">Đề này chưa nhập đáp án nên chưa chấm được. Vào <a href="admin.html">Quản lý đáp án</a> để đặt trước.</div>`)
+    + `<div class="spacer"></div>
+       <div class="muted small" style="margin-bottom:6px">Ma trận câu <span style="color:var(--green)">■ đúng</span> · <span style="color:var(--red)">■ sai</span></div>
+       <div class="navgrid">${navHtml}</div>`;
 
   document.getElementById('questions').innerHTML = cards;
-  document.getElementById('scoreSummary').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('sidebar').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function init() {
@@ -207,7 +224,7 @@ async function init() {
     document.getElementById('clearBtn').addEventListener('click', () => {
       document.getElementById('ans').value = '';
       document.getElementById('questions').innerHTML = '';
-      document.getElementById('scoreSummary').innerHTML = '';
+      document.getElementById('sidebar').innerHTML = '<div class="muted small">Chọn đề, dán đáp án rồi bấm <b>Chấm bài</b> để xem ma trận câu.</div>';
       document.getElementById('parseInfo').textContent = '';
     });
     fillExamSelect();
