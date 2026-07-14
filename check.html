@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chấm tay · MAD101</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div id="top"></div>
+<div class="container wide">
+
+  <!-- LOGIN (dùng chung cổng admin) -->
+  <div id="loginView" style="display:none">
+    <h1>Đăng nhập Admin</h1>
+    <p class="muted">Khu vực chấm tay dành cho giảng viên. Nhập mật khẩu để tiếp tục.</p>
+    <div class="card" style="max-width:380px">
+      <div class="flex" style="flex-direction:column;align-items:stretch">
+        <label>Mật khẩu</label>
+        <input type="password" id="pw" placeholder="••••••" autofocus>
+        <div class="spacer"></div>
+        <button class="btn" id="loginBtn" style="justify-content:center">Đăng nhập</button>
+        <div class="small" id="loginErr" style="color:var(--red);min-height:18px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="mainView" style="display:none">
+    <div class="flex" style="justify-content:space-between">
+      <div>
+        <h1 style="margin-bottom:2px">Chấm tay — dò đáp án 1 bài</h1>
+        <div class="muted small">Chọn đề → dán đáp án của học viên → xem đúng/sai từng câu như giao diện học viên. Không ghi vào Google Sheet.</div>
+      </div>
+      <a class="btn ghost" href="admin.html">← Quản lý đáp án</a>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <div class="flex">
+        <div>
+          <label class="small muted">Bộ đề</label><br>
+          <select id="section">
+            <option value="FE">FE</option><option value="PT">PT</option><option value="RE">RE</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:260px">
+          <label class="small muted">Đề</label><br>
+          <select id="exam" style="width:100%"></select>
+        </div>
+        <div>
+          <label class="small muted">&nbsp;</label><br>
+          <span class="pill" id="cover">—</span>
+        </div>
+      </div>
+
+      <div class="spacer"></div>
+      <label class="small muted">Đáp án học viên</label>
+      <textarea id="ans" rows="3" placeholder="Dán đáp án… ví dụ: 1.A 2.B 3.A …  hoặc  1A 2B 3A …  hoặc chỉ dãy chữ theo thứ tự: A B A B D …"></textarea>
+      <div class="muted small" style="margin-top:6px">Nhận cả 2 kiểu: <b>theo số câu</b> (<code>1.A 2.B</code>, <code>1=A</code>, <code>1) A</code>) và <b>theo thứ tự</b> (<code>A B A B …</code>).</div>
+      <div class="flex" style="margin-top:10px">
+        <button class="btn green" id="gradeBtn">Chấm bài</button>
+        <button class="btn ghost" id="clearBtn">Xoá</button>
+        <span class="grow"></span>
+        <span class="muted small" id="parseInfo"></span>
+      </div>
+    </div>
+
+    <div id="scoreSummary" style="margin-top:14px"></div>
+    <div id="questions"></div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+document.getElementById('top').outerHTML = renderTopbar('admin.html');
+
+let MANIFEST, ANSWERS, EXAMS_BY_ID = {};
+
+function showView() {
+  document.getElementById('loginView').style.display = isAdmin() ? 'none' : 'block';
+  document.getElementById('mainView').style.display  = isAdmin() ? 'block' : 'none';
+}
+
+// ---- login ----
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+function doLogin() {
+  if (loginAdmin(document.getElementById('pw').value)) { showView(); init(); }
+  else document.getElementById('loginErr').textContent = 'Sai mật khẩu.';
+}
+
+// ---- chọn đề ----
+function examsOf(sec) { return (MANIFEST.sections[sec] || []); }
+
+function fillExamSelect() {
+  const sec = document.getElementById('section').value;
+  const sel = document.getElementById('exam');
+  sel.innerHTML = examsOf(sec).map(e => {
+    const has = Object.keys(ANSWERS[e.id] || {}).length;
+    const tag = has ? (has >= e.count ? '✓' : '◐') : '○';
+    return `<option value="${e.id}">${tag} ${e.name} (${e.count} câu)</option>`;
+  }).join('');
+  updateCover();
+}
+
+function currentExam() {
+  const id = document.getElementById('exam').value;
+  return EXAMS_BY_ID[id] || null;
+}
+
+function updateCover() {
+  const ex = currentExam();
+  const el = document.getElementById('cover');
+  if (!ex) { el.textContent = '—'; return; }
+  const has = Object.keys(ANSWERS[ex.id] || {}).length;
+  el.textContent = `${has}/${ex.count} câu có đáp án`;
+  el.style.color = has >= ex.count ? 'var(--green)' : (has ? 'var(--amber)' : 'var(--red)');
+}
+
+// ---- parse đáp án học viên ----
+// Trả về { n(1-based): 'A' } và số câu nhận dạng được.
+function parseStudentAnswers(text, count) {
+  const picks = {};
+  const numRe = /(\d+)\s*[=.:)\-]?\s*([A-Fa-f])(?![A-Za-z])/g;
+  let m, nHits = 0;
+  while ((m = numRe.exec(text)) !== null) {
+    const idx = parseInt(m[1], 10);
+    if (idx >= 1 && idx <= count) { picks[idx] = m[2].toUpperCase(); nHits++; }
+  }
+  if (nHits) return { picks, mode: 'số câu', hits: nHits };
+  // không thấy cặp số–chữ → coi là dãy theo thứ tự
+  const letters = (text.toUpperCase().match(/[A-F]/g) || []);
+  letters.slice(0, count).forEach((l, i) => picks[i + 1] = l);
+  return { picks, mode: 'thứ tự', hits: Math.min(letters.length, count) };
+}
+
+// ---- chấm & hiển thị ----
+function optBox(letter, pick, ans) {
+  const cls = ['opt'];
+  if (letter === pick) cls.push('sel');
+  if (ans && letter === ans) cls.push('key');
+  if (letter === pick && ans && letter !== ans) cls.push('badpick');
+  return `<span class="${cls.join(' ')}" style="pointer-events:none">${letter}</span>`;
+}
+
+function grade() {
+  const ex = currentExam();
+  if (!ex) return toast('Chưa chọn đề');
+  const KEY = ANSWERS[ex.id] || {};
+  const hasKey = Object.keys(KEY).length > 0;
+  const { picks, mode, hits } = parseStudentAnswers(document.getElementById('ans').value, ex.count);
+  document.getElementById('parseInfo').textContent = `Đọc được ${hits}/${ex.count} câu (kiểu: ${mode})`;
+
+  let correct = 0, answered = 0;
+  const cards = ex.images.map((img, i) => {
+    const n = i + 1;
+    const pick = picks[n] || '';
+    const ans = KEY[img] || '';
+    if (pick) answered++;
+    const ok = ans && pick === ans;
+    if (ok) correct++;
+
+    let mark;
+    if (!ans) mark = '<span class="muted">— chưa có đáp án</span>';
+    else if (ok) mark = '<span style="color:var(--green)">✓ Đúng</span>';
+    else mark = pick
+      ? `<span style="color:var(--red)">✗ Sai (chọn ${pick}, đúng là ${ans})</span>`
+      : `<span style="color:var(--red)">Bỏ trống (đúng là ${ans})</span>`;
+
+    const cardCls = !ans ? '' : (ok ? 'correct' : 'wrong');
+    return `
+    <div class="qcard ${cardCls}">
+      <div class="qhead">
+        <span class="qnum">Câu ${n}<span class="muted">/${ex.count}</span></span>
+        <span class="small">${mark}</span>
+      </div>
+      <img class="qimg" loading="lazy" src="${imgUrl(ex.id, img)}" alt="Câu ${n}">
+      <div class="opts" style="margin-top:10px">
+        ${OPTIONS.map(l => optBox(l, pick, ans)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  const score = pct(correct, ex.count);
+  document.getElementById('scoreSummary').innerHTML = hasKey
+    ? `<div class="card"><div class="scorebox">
+         <div class="muted small">Kết quả · ${ex.name}</div>
+         <div class="big">${score}%</div>
+         <div class="small">${correct}/${ex.count} câu đúng · đã chọn ${answered}/${ex.count} câu</div>
+       </div></div>`
+    : `<div class="card"><div class="small" style="color:var(--amber)">Đề này chưa nhập đáp án nên chưa chấm được. Vào <a href="admin.html">Quản lý đáp án</a> để đặt trước.</div></div>`;
+
+  document.getElementById('questions').innerHTML = cards;
+  document.getElementById('scoreSummary').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function init() {
+  if (!MANIFEST) {
+    try { [MANIFEST, ANSWERS] = await Promise.all([loadManifest(), loadAnswers()]); }
+    catch (e) { document.getElementById('questions').innerHTML = `<div class="card">Lỗi tải dữ liệu: ${e.message}</div>`; return; }
+    EXAMS_BY_ID = {};
+    for (const s of ['FE', 'PT', 'RE']) for (const e of (MANIFEST.sections[s] || [])) EXAMS_BY_ID[e.id] = { ...e, section: s };
+
+    document.getElementById('section').addEventListener('change', fillExamSelect);
+    document.getElementById('exam').addEventListener('change', updateCover);
+    document.getElementById('gradeBtn').addEventListener('click', grade);
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      document.getElementById('ans').value = '';
+      document.getElementById('questions').innerHTML = '';
+      document.getElementById('scoreSummary').innerHTML = '';
+      document.getElementById('parseInfo').textContent = '';
+    });
+    fillExamSelect();
+  }
+}
+
+showView();
+if (isAdmin()) init();
+</script>
+</body>
+</html>

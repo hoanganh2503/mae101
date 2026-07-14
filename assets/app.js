@@ -24,7 +24,7 @@ const ADMIN_PASSWORD = 'mad101';
 // ---- Gom kết quả về Google Sheet ----
 // Dán link Web App của Google Apps Script vào đây (xem README mục "Gom kết quả").
 // Để trống "" nếu chưa dùng — khi đó kết quả chỉ lưu trên máy học viên.
-const RESULTS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbz-sXMpcwx_omQRsNw5HKNODj63OuAXbfmH1_fOvvEQcbglCDh6ze40J8nKA6HZPrFxNA/exec';
+const RESULTS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwlLKvNcLXnuboxoejzM3fD2ZW5CrDikKJeBoxBI66aS4NxvntbwYm7tymPOwsMThw5HQ/exec';
 
 // ---------- fetch helpers ----------
 async function loadManifest() {
