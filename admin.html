@@ -79,6 +79,18 @@
       </div>
     </div>
 
+    <!-- Chấm lại kết quả đã nộp trên Google Sheet -->
+    <div class="card" style="margin-top:14px">
+      <div class="flex" style="justify-content:space-between;align-items:flex-start;gap:12px">
+        <div style="max-width:640px">
+          <h3 style="margin:0 0 4px">Chấm lại bài đã nộp (Google Sheet)</h3>
+          <div class="muted small">Sau khi sửa đáp án, hãy <b>Tải answers.json → bỏ vào <code>data/</code> → commit/push</b> trước. Rồi bấm nút này để tính lại điểm cho <b>tất cả</b> bài đã nộp theo đáp án mới và cập nhật ngay trên Sheet (Điểm, Đúng, Đúng/Sai, Câu sai; cột "Chấm lại lúc" ghi thời điểm). Chấm lại theo đúng <code>data/answers.json</code> đã commit — không dùng bản nháp.</div>
+        </div>
+        <button class="btn" id="regradeBtn">↻ Chấm lại &amp; cập nhật Sheet</button>
+      </div>
+      <div id="regradeReport" class="small" style="margin-top:10px"></div>
+    </div>
+
     <!-- Bulk fill -->
     <details class="card" style="margin-top:14px">
       <summary style="cursor:pointer;font-weight:700">Nhập nhanh nhiều đáp án</summary>
@@ -270,6 +282,66 @@ function doImport(file) {
   r.readAsText(file);
 }
 
+// ---- chấm lại toàn bộ bài đã nộp theo đáp án đã commit ----
+async function doRegrade() {
+  if (!RESULTS_ENDPOINT) { toast('Chưa cấu hình Google Sheet'); return; }
+  if (!confirm('Chấm lại TẤT CẢ bài đã nộp trên Google Sheet theo đáp án đã commit (data/answers.json) và cập nhật điểm?\n\nHãy chắc chắn bạn đã Tải answers.json + commit/push đáp án mới trước khi chấm lại.')) return;
+
+  const btn = document.getElementById('regradeBtn');
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Đang chấm lại…';
+  document.getElementById('regradeReport').innerHTML = '<span class="muted">⏳ Đang gửi đáp án & chấm lại trên Google Sheet…</span>';
+  try {
+    const answers = await loadAnswers();                 // đáp án đang deploy (data/answers.json)
+    if (!Object.keys(answers).length) { toast('data/answers.json trống — chưa có đáp án để chấm.'); return; }
+    // thứ tự câu (ảnh) từng đề, để chấm lại được cả bài full cũ chưa lưu bộ câu
+    const order = {};
+    for (const id of Object.keys(answers)) {
+      const ex = EXAMS_BY_ID[id];
+      if (ex) order[id] = ex.images;
+    }
+    const requestId = 'rg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    await submitRegradeToSheet({ requestId, answers, order });
+
+    const summary = await pollRegradeSummary(requestId, 45000);
+    if (summary && summary.ok) {
+      showRegradeReport(summary);
+      toast(`Đã chấm lại: đổi điểm ${summary.changed}/${summary.regraded} bài`);
+    } else if (summary && !summary.ok) {
+      document.getElementById('regradeReport').innerHTML = `<span style="color:var(--red)">Lỗi từ Apps Script: ${summary.error || 'không rõ'}</span>`;
+    } else {
+      document.getElementById('regradeReport').innerHTML = '<span class="muted">Đã gửi yêu cầu chấm lại nhưng chưa đọc được tóm tắt (có thể do phiên bản Apps Script cũ). Hãy mở Google Sheet kiểm tra cột "Điểm" và "Chấm lại lúc".</span>';
+    }
+  } catch (e) {
+    document.getElementById('regradeReport').innerHTML = `<span style="color:var(--red)">Lỗi: ${e.message}</span>`;
+  } finally {
+    btn.disabled = false; btn.textContent = label;
+  }
+}
+
+async function pollRegradeSummary(requestId, totalMs) {
+  const start = Date.now();
+  while (Date.now() - start < totalMs) {
+    await new Promise(r => setTimeout(r, 1500));
+    const s = await fetchRegradeSummary();
+    if (s && s.requestId === requestId) return s;
+  }
+  return null;
+}
+
+function showRegradeReport(s) {
+  const el = document.getElementById('regradeReport');
+  const skipped = (s.skippedNoKey || 0) + (s.skippedNoMap || 0);
+  el.innerHTML = `
+    <div class="card" style="margin:0">
+      <b>Kết quả chấm lại</b> · ${fmtDate(s.at)}<br>
+      Tổng dòng: <b>${s.rows}</b> · Đã chấm lại: <b>${s.regraded}</b> ·
+      <span style="color:var(--green)">Thay đổi điểm: <b>${s.changed}</b></span> · Bỏ qua: ${skipped}
+      ${s.skippedNoKey ? `<div class="muted">• ${s.skippedNoKey} bài thuộc đề chưa có đáp án — không chấm.</div>` : ''}
+      ${s.skippedNoMap ? `<div class="muted">• ${s.skippedNoMap} bài random cũ (chưa lưu bộ câu) — không chấm lại tự động được. Các bài nộp từ nay đã lưu bộ câu nên sẽ chấm lại được.</div>` : ''}
+    </div>`;
+}
+
 async function init() {
   if (!MANIFEST) {
     try { [MANIFEST, BASE] = await Promise.all([loadManifest(), loadAnswers()]); }
@@ -297,6 +369,13 @@ async function init() {
   document.getElementById('importFile').addEventListener('change', e => e.target.files[0] && doImport(e.target.files[0]));
   document.getElementById('bulkSeq').addEventListener('click', bulkSeq);
   document.getElementById('bulkNum').addEventListener('click', bulkNum);
+  const rgBtn = document.getElementById('regradeBtn');
+  if (!RESULTS_ENDPOINT) {
+    rgBtn.disabled = true;
+    document.getElementById('regradeReport').innerHTML = '<span class="muted">Chưa cấu hình Google Sheet (RESULTS_ENDPOINT trong assets/app.js) nên không dùng được chấm lại.</span>';
+  } else {
+    rgBtn.addEventListener('click', doRegrade);
+  }
   document.getElementById('clearDraft').addEventListener('click', () => {
     if (!confirm('Xoá mọi sửa đổi chưa tải về? Sẽ quay lại đúng nội dung answers.json đã commit.')) return;
     localStorage.removeItem(LS_DRAFT); WORKING = JSON.parse(JSON.stringify(BASE));

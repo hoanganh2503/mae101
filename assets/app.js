@@ -102,6 +102,40 @@ function submitResultToSheet(payload) {
   }).then(() => true).catch(() => false);
 }
 
+// ---------- Chấm lại kết quả đã nộp theo đáp án mới (admin) ----------
+// Gửi yêu cầu chấm lại (kèm đáp án + thứ tự câu) lên Apps Script. Fire-and-forget như trên;
+// kết quả tóm tắt đọc lại bằng JSONP (fetchRegradeSummary) để tránh CORS.
+function submitRegradeToSheet(payload) {
+  if (!RESULTS_ENDPOINT) return Promise.resolve(false);
+  return fetch(RESULTS_ENDPOINT, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action: 'regrade' }, payload)),
+  }).then(() => true).catch(() => false);
+}
+
+// Đọc dữ liệu từ Apps Script qua JSONP (thẻ <script>) — không vướng CORS như fetch GET.
+function jsonp(url, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const cb = '__jsonp_' + Math.random().toString(36).slice(2);
+    const s = document.createElement('script');
+    let done = false;
+    const cleanup = () => { done = true; try { delete window[cb]; } catch (e) { window[cb] = undefined; } s.remove(); clearTimeout(t); };
+    const t = setTimeout(() => { if (!done) { cleanup(); reject(new Error('timeout')); } }, timeoutMs || 8000);
+    window[cb] = (data) => { if (!done) { cleanup(); resolve(data); } };
+    s.onerror = () => { if (!done) { cleanup(); reject(new Error('không tải được')); } };
+    s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb + '&_=' + Date.now();
+    document.body.appendChild(s);
+  });
+}
+
+// Lấy tóm tắt lần chấm lại gần nhất (Apps Script lưu trong Script Properties).
+function fetchRegradeSummary() {
+  if (!RESULTS_ENDPOINT) return Promise.resolve(null);
+  return jsonp(RESULTS_ENDPOINT + '?action=summary').catch(() => null);
+}
+
 // ---------- chọn ngẫu nhiên phân bố đều ----------
 // Lấy `per` phần tử ngẫu nhiên trong mỗi khối `block` phần tử liên tiếp,
 // giữ nguyên thứ tự gốc. Ví dụ pickDistributed(images, 2, 10):

@@ -241,6 +241,7 @@ function gradeAndShow(timeSec, persist) {
         mode: MODE === 'r20' ? `Random ${EXAM.count} câu` : 'Full',
         score, correct, total: EXAM.count,
         timeSec: Math.round(timeSec), timeMMSS: fmtTime(timeSec), finishedAt,
+        images: EXAM.images.slice(),                              // bộ câu đã làm (để chấm lại chính xác)
         details,                                                  // chi tiết từng câu
         picksStr: details.map(d => `${d.n}.${d.pick || '-'}`).join(' '),
         keyStr:   details.map(d => `${d.n}.${d.ans || '-'}`).join(' '),
