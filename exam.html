@@ -23,6 +23,16 @@
   </div>
 </div>
 
+<!-- Cảnh báo thoát tab giữa giờ thi -->
+<div id="leaveOverlay" class="overlay" style="display:none">
+  <div class="card" style="max-width:440px;width:100%;border-color:var(--red)">
+    <h2 style="margin-top:0;color:var(--red)">⚠ Bạn đã rời khỏi trang thi</h2>
+    <p id="leaveMsg" class="small"></p>
+    <p class="muted small">Chuyển tab, thu nhỏ cửa sổ hay mở ứng dụng khác trong lúc làm bài đều bị tính là rời trang.</p>
+    <button class="btn" id="leaveOk" style="width:100%;justify-content:center">Tôi đã hiểu, làm tiếp</button>
+  </div>
+</div>
+
 <div class="container wide">
   <div class="flex" style="justify-content:space-between">
     <div>
@@ -40,7 +50,8 @@
           <div class="timer" id="timer">--:--</div>
         </div>
         <div class="muted small" id="answeredCount" style="text-align:center"></div>
-        <div class="muted small" id="flagCount" style="text-align:center;margin-bottom:8px"></div>
+        <div class="muted small" id="flagCount" style="text-align:center"></div>
+        <div class="small" id="leaveCount" style="text-align:center;margin-bottom:8px"></div>
         <button class="btn green" id="submitBtn" style="width:100%;justify-content:center">Nộp bài</button>
         <div class="spacer"></div>
         <div class="navgrid" id="navgrid"></div>
@@ -72,6 +83,12 @@ let submitted = false;
 let started = false;     // đã bắt đầu tính giờ chưa
 let resumeElapsed = 0;   // số giây đã làm ở lần trước (khôi phục)
 let TOTAL_SEC = 0;       // tổng thời gian được phép (đếm ngược)
+
+// ---- chống thoát tab: 2 lần đầu cảnh báo, lần thứ 3 nộp bài luôn ----
+const MAX_LEAVES = 3;
+let leaveCount = 0;
+let leaveLock = false;   // gộp blur + visibilitychange của cùng 1 lần thoát
+let lastLeaveTs = 0;     // chống đếm 2 lần cho cùng một thao tác chuyển tab
 
 function optEl(img, letter) {
   return `<label class="opt" data-img="${img}" data-letter="${letter}">
@@ -142,12 +159,51 @@ function saveState() {
     picks: { ...picks },
     flags: [...flags],
     elapsedSec,
+    leaveCount,
     total: EXAM.count,
     mode: MODE === 'r20' ? 'r20' : 'full',
     subset: EXAM.images.slice(),   // để vào lại giữ đúng bộ câu (nhất là khi random)
     savedAt: new Date().toISOString(),
   });
 }
+
+function updateLeaveCount() {
+  const el = document.getElementById('leaveCount');
+  if (!leaveCount) { el.textContent = ''; return; }
+  el.textContent = `⚠ Rời trang ${leaveCount}/${MAX_LEAVES} lần`;
+  el.style.color = leaveCount >= MAX_LEAVES - 1 ? 'var(--red)' : 'var(--amber)';
+}
+
+// Học viên rời trang (chuyển tab / thu nhỏ / mở app khác).
+function onLeaveExam() {
+  if (REVIEW || submitted || !started || leaveLock) return;
+  // blur và visibilitychange cùng bắn cho 1 thao tác chuyển tab -> chỉ tính lần đầu
+  if (Date.now() - lastLeaveTs < 1500) return;
+  leaveLock = true;
+  lastLeaveTs = Date.now();
+  leaveCount++;
+  updateLeaveCount();
+  saveState();   // ghi lại ngay, tải lại trang không xoá được số lần đã thoát
+
+  if (leaveCount >= MAX_LEAVES) {
+    gradeAndShow(Math.min((Date.now() - startTs) / 1000, TOTAL_SEC), true, true);
+    toast(`Rời trang ${MAX_LEAVES} lần — đã tự nộp bài`);
+    return;
+  }
+  const left = MAX_LEAVES - leaveCount;
+  document.getElementById('leaveMsg').innerHTML =
+    `Đây là lần thứ <b>${leaveCount}</b>. Còn <b>${left}</b> lần nữa là bài sẽ <b>tự động nộp</b>.`;
+  document.getElementById('leaveOverlay').style.display = 'flex';
+}
+
+// Trở lại trang: mở khoá để lần thoát sau được tính tiếp.
+function onReturnExam() { leaveLock = false; }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) onLeaveExam(); else onReturnExam();
+});
+window.addEventListener('blur', onLeaveExam);
+window.addEventListener('focus', onReturnExam);
 
 function tick() {
   if (submitted) return;
@@ -166,8 +222,9 @@ function tick() {
   saveState();   // lưu lại thời gian còn lại mỗi giây
 }
 
-function gradeAndShow(timeSec, persist) {
+function gradeAndShow(timeSec, persist, byLeaving) {
   submitted = true;
+  document.getElementById('leaveOverlay').style.display = 'none';
   if (timerInt) clearInterval(timerInt);
   if (persist) clearInProgress(EXAM_ID);   // đã nộp -> không khôi phục nữa
   let correct = 0;
@@ -202,6 +259,9 @@ function gradeAndShow(timeSec, persist) {
   });
 
   const score = pct(correct, EXAM.count);
+  const modeStr = (MODE === 'r20' ? `Random ${EXAM.count} câu` : 'Full')
+    + (byLeaving ? ` · ⚠ tự nộp do rời trang ${leaveCount} lần` : '')
+    + (!byLeaving && leaveCount ? ` · ⚠ rời trang ${leaveCount} lần` : '');
 
   // hiện điểm thay cho timer
   const tb = document.getElementById('timerbox');
@@ -215,6 +275,8 @@ function gradeAndShow(timeSec, persist) {
        <div class="muted small">Thời gian: ${fmtTime(timeSec)}</div>`;
 
   document.getElementById('submitBtn').remove();
+  if (byLeaving) tb.insertAdjacentHTML('beforeend',
+    `<div class="small" style="color:var(--red);margin-top:6px">⚠ Tự nộp do rời trang thi ${leaveCount} lần</div>`);
 
   if (persist && hasKeyData) {
     const student = getStudent();
@@ -238,7 +300,7 @@ function gradeAndShow(timeSec, persist) {
       submitResultToSheet({
         name: student.name, mssv: student.mssv,
         section: EXAM.section, examName: EXAM.name, examId: EXAM_ID,
-        mode: MODE === 'r20' ? `Random ${EXAM.count} câu` : 'Full',
+        mode: modeStr,
         score, correct, total: EXAM.count,
         timeSec: Math.round(timeSec), timeMMSS: fmtTime(timeSec), finishedAt,
         images: EXAM.images.slice(),                              // bộ câu đã làm (để chấm lại chính xác)
@@ -258,7 +320,13 @@ function gradeAndShow(timeSec, persist) {
 
 function submit() {
   const unanswered = EXAM.count - Object.keys(picks).length;
-  if (unanswered > 0 && !confirm(`Còn ${unanswered} câu chưa chọn. Vẫn nộp?`)) return;
+  if (unanswered > 0) {
+    // hộp confirm làm mất focus cửa sổ -> khoá lại để không bị tính là rời trang
+    leaveLock = true;
+    const go = confirm(`Còn ${unanswered} câu chưa chọn. Vẫn nộp?`);
+    setTimeout(() => { leaveLock = false; }, 300);
+    if (!go) return;
+  }
   gradeAndShow(Math.min((Date.now() - startTs) / 1000, TOTAL_SEC), true);
 }
 
@@ -346,7 +414,13 @@ function submit() {
     (saved.flags || []).forEach(idx => { if (!flags.has(idx)) toggleFlag(idx); });
     updateAnsweredCount();
     resumeElapsed = Math.min(saved.elapsedSec || 0, TOTAL_SEC);
+    leaveCount = saved.leaveCount || 0;   // tải lại trang không xoá được số lần đã rời
+    updateLeaveCount();
   }
+
+  document.getElementById('leaveOk').addEventListener('click', () => {
+    document.getElementById('leaveOverlay').style.display = 'none';
+  });
 
   // rời trang giữa chừng mà chưa nộp -> cảnh báo + lưu lại bài làm/thời gian
   window.addEventListener('beforeunload', (e) => {
