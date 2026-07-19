@@ -56,7 +56,6 @@ function render() {
       </tr>`);
   });
 
-  // tóm tắt
   const sum = document.getElementById('summary');
   if (!results.length) { sum.innerHTML = ''; return; }
   const attempts = results.length;
@@ -78,7 +77,7 @@ function toCSV() {
   for (const r of results) {
     lines.push([r.section, r.examName, r.examId, r.score, r.correct, r.total, Math.round(r.timeSec), fmtTime(r.timeSec), r.finishedAt].map(esc).join(','));
   }
-  return '﻿' + lines.join('\r\n'); // BOM để Excel đọc đúng tiếng Việt
+  return '﻿' + lines.join('\r\n');
 }
 
 document.getElementById('csvBtn').addEventListener('click', () => {

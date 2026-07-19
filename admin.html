@@ -10,7 +10,6 @@
 <div id="top"></div>
 <div class="container">
 
-  <!-- LOGIN -->
   <div id="loginView" style="display:none">
     <h1>Đăng nhập Admin</h1>
     <p class="muted">Khu vực dành cho người ra đề. Nhập mật khẩu để đặt/sửa đáp án.</p>
@@ -26,7 +25,6 @@
     </div>
   </div>
 
-  <!-- EDITOR -->
   <div id="adminView" style="display:none">
     <div class="flex" style="justify-content:space-between">
       <div>
@@ -82,7 +80,6 @@
       </div>
     </div>
 
-    <!-- Chấm lại kết quả đã nộp trên Google Sheet -->
     <div class="card" style="margin-top:14px">
       <div class="flex" style="justify-content:space-between;align-items:flex-start;gap:12px">
         <div style="max-width:640px">
@@ -94,7 +91,6 @@
       <div id="regradeReport" class="small" style="margin-top:10px"></div>
     </div>
 
-    <!-- Bulk fill -->
     <details class="card" style="margin-top:14px">
       <summary style="cursor:pointer;font-weight:700">Nhập nhanh nhiều đáp án</summary>
       <div class="spacer"></div>
@@ -125,7 +121,6 @@ function showView() {
   document.getElementById('adminView').style.display = isAdmin() ? 'block' : 'none';
 }
 
-// ---- login ----
 document.getElementById('loginBtn').addEventListener('click', doLogin);
 document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 function doLogin() {
@@ -151,7 +146,6 @@ function currentExam() {
   return EXAMS_BY_ID[selectedExamId] || null;
 }
 
-// Lọc theo bộ đề + từ khoá + "chỉ chưa đủ đáp án"
 function visibleExams() {
   const sec = document.getElementById('section').value;
   const q = document.getElementById('examSearch').value.trim().toLowerCase();
@@ -169,7 +163,6 @@ function visibleExams() {
   return out;
 }
 
-// Vẽ lại danh sách đề (không tự đổi đề đang chọn)
 function fillExamSelect() {
   const wrap = document.getElementById('examList');
   const showSec = document.getElementById('section').value === 'ALL';
@@ -234,13 +227,12 @@ function renderEditor() {
   ed.querySelectorAll('.ansSel').forEach(sel => {
     sel.addEventListener('change', () => {
       setAnswer(exam.id, sel.dataset.img, sel.value);
-      fillExamSelect();   // cập nhật ✓/◐ trong danh sách
-      updateCover(exam);  // cập nhật bộ đếm
+      fillExamSelect();
+      updateCover(exam);
     });
   });
 }
 
-// ---- bulk fill ----
 function bulkSeq() {
   const exam = currentExam(); if (!exam) return;
   const letters = (document.getElementById('bulk').value.toUpperCase().match(/[A-F]/g) || []);
@@ -262,9 +254,8 @@ function bulkNum() {
   toast(`Đã điền ${n} câu`);
 }
 
-// ---- import / export ----
 function doDownload() {
-  // chỉ giữ các đề thật sự có đáp án để file gọn
+
   const out = {};
   for (const [id, k] of Object.entries(WORKING)) {
     if (k && Object.keys(k).length) out[id] = k;
@@ -285,7 +276,6 @@ function doImport(file) {
   r.readAsText(file);
 }
 
-// ---- chấm lại toàn bộ bài đã nộp theo đáp án đã commit ----
 async function doRegrade() {
   if (!RESULTS_ENDPOINT) { toast('Chưa cấu hình Google Sheet'); return; }
   if (!confirm('Chấm lại TẤT CẢ bài đã nộp trên Google Sheet theo đáp án đã commit (data/answers.json) và cập nhật điểm?\n\nHãy chắc chắn bạn đã Tải answers.json + commit/push đáp án mới trước khi chấm lại.')) return;
@@ -295,9 +285,9 @@ async function doRegrade() {
   btn.disabled = true; btn.textContent = 'Đang chấm lại…';
   document.getElementById('regradeReport').innerHTML = '<span class="muted">⏳ Đang gửi đáp án & chấm lại trên Google Sheet…</span>';
   try {
-    const answers = await loadAnswers();                 // đáp án đang deploy (data/answers.json)
+    const answers = await loadAnswers();
     if (!Object.keys(answers).length) { toast('data/answers.json trống — chưa có đáp án để chấm.'); return; }
-    // thứ tự câu (ảnh) từng đề, để chấm lại được cả bài full cũ chưa lưu bộ câu
+
     const order = {};
     for (const id of Object.keys(answers)) {
       const ex = EXAMS_BY_ID[id];
@@ -350,22 +340,21 @@ async function init() {
     try { [MANIFEST, BASE] = await Promise.all([loadManifest(), loadAnswers()]); }
     catch (e) { document.getElementById('editor').innerHTML = `<div class="card">Lỗi tải dữ liệu: ${e.message}</div>`; return; }
   }
-  // tra cứu nhanh đề theo id (dùng cho currentExam khi chọn "Tất cả")
+
   EXAMS_BY_ID = {};
   for (const s of ['FE', 'PT', 'RE']) for (const e of (MANIFEST.sections[s] || [])) EXAMS_BY_ID[e.id] = { ...e, section: s };
 
-  // gộp: đáp án đã commit (BASE) + bản nháp chưa tải về (draft)
   const draft = getJSON(LS_DRAFT, null);
   WORKING = JSON.parse(JSON.stringify(BASE));
   if (draft) for (const [id, k] of Object.entries(draft)) WORKING[id] = { ...(WORKING[id] || {}), ...k };
 
   document.getElementById('section').addEventListener('change', fillExamSelect);
-  // bấm vào một đề trong danh sách để mở phần nhập đáp án
+
   document.getElementById('examList').addEventListener('click', (ev) => {
     const row = ev.target.closest('.exrow');
     if (row) selectExam(row.dataset.id, true);
   });
-  // tìm kiếm & lọc: chỉ lọc lại danh sách, mở đề khi bấm vào
+
   document.getElementById('examSearch').addEventListener('input', fillExamSelect);
   document.getElementById('onlyMissing').addEventListener('change', fillExamSelect);
   document.getElementById('downloadBtn').addEventListener('click', doDownload);

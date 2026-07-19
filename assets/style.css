@@ -68,7 +68,6 @@ h2 { font-size: 20px; margin: 24px 0 12px; }
 
 .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); color: var(--muted); }
 
-/* Danh sách đề bấm chọn (admin) */
 .examlist { margin-top: 4px; max-height: 360px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
 .exrow { display: flex; align-items: center; gap: 6px; padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--line); font-size: 14px; }
 .exrow:last-child { border-bottom: none; }
@@ -94,7 +93,6 @@ table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 14px; }
 th { color: var(--muted); font-weight: 600; }
 
-/* Exam runner: sidebar (thời gian/nộp bài) bên trái, câu hỏi bên phải */
 .qwrap { display: grid; grid-template-columns: 240px 1fr; gap: 24px; align-items: start; }
 .qcard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 18px; }
 .qcard.correct { border-color: var(--green); }

@@ -1,14 +1,9 @@
-// Quét các thư mục đề (FE/PT/RE) và tạo data/manifest.json
-// Mỗi đề = 1 folder con; mỗi câu hỏi = 1 ảnh .jpg THẬT (magic bytes FF D8 FF).
-// File .jpg nào thực ra là HTML (trang "exit" rác từ site gốc) sẽ bị loại.
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = __dirname;
 const SECTIONS = ['FE', 'PT', 'RE'];
 
-// Ảnh có đuôi .jpg nhưng nội dung có thể là JPEG / PNG / GIF / WebP (trình duyệt
-// nhận theo nội dung). Chỉ cần loại các file thực chất là HTML (trang "exit" rác).
 function isRealImage(file) {
   const fd = fs.openSync(file, 'r');
   const buf = Buffer.alloc(12);
@@ -22,14 +17,12 @@ function isRealImage(file) {
   return jpeg || png || gif || webp;
 }
 
-// Đọc năm từ tên đề: ưu tiên năm 4 chữ số (2024), nếu không có thì lấy
-// mã mùa + 2 chữ số (FA25, SU25, SP26, FA21, SP26 trong MAD101_SP26_FE...).
 function parseYear(name) {
   const m4 = name.match(/\b(?:19|20)\d{2}\b/);
   if (m4) return parseInt(m4[0], 10);
   const m2 = name.match(/(?:FA|SP|SU|WI|FALL|SPRING|SUMMER)\s*[-_]?\s*(\d{2})(?!\d)/i);
   if (m2) return 2000 + parseInt(m2[1], 10);
-  return 0; // không xác định -> xếp cuối
+  return 0;
 }
 
 const manifest = { generatedAt: new Date().toISOString(), sections: {} };
@@ -64,7 +57,7 @@ for (const section of SECTIONS) {
     totalExams++;
     totalQuestions += questions.length;
   }
-  // sắp xếp theo năm giảm dần, cùng năm thì theo tên
+
   exams.sort((a, b) => b.year - a.year || a.name.localeCompare(b.name, undefined, { numeric: true }));
   manifest.sections[section] = exams;
 }

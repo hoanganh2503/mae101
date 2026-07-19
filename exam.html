@@ -9,7 +9,6 @@
 <body>
 <div id="top"></div>
 
-<!-- Lớp phủ nhập thông tin học viên trước khi làm bài -->
 <div id="idOverlay" class="overlay" style="display:none">
   <div class="card" style="max-width:420px;width:100%">
     <h2 style="margin-top:0">Trước khi bắt đầu</h2>
@@ -23,7 +22,6 @@
   </div>
 </div>
 
-<!-- Cảnh báo thoát tab giữa giờ thi -->
 <div id="leaveOverlay" class="overlay" style="display:none">
   <div class="card" style="max-width:440px;width:100%;border-color:var(--red)">
     <h2 style="margin-top:0;color:var(--red)">⚠ Bạn đã rời khỏi trang thi</h2>
@@ -72,23 +70,22 @@ document.getElementById('top').outerHTML = renderTopbar('');
 const params = new URLSearchParams(location.search);
 const EXAM_ID = params.get('exam');
 const REVIEW = params.get('review') === '1';
-const MODE = params.get('mode');   // 'r20' = random ~20 câu (2 câu/10 câu); null = làm full
+const MODE = params.get('mode');
 
 let MANIFEST, ANSWERS, EXAM, KEY;
-const picks = {};        // { 'NN.jpg': 'A' }
-const flags = new Set(); // chỉ số câu được gắn cờ
+const picks = {};
+const flags = new Set();
 let startTs = Date.now();
 let timerInt = null;
 let submitted = false;
-let started = false;     // đã bắt đầu tính giờ chưa
-let resumeElapsed = 0;   // số giây đã làm ở lần trước (khôi phục)
-let TOTAL_SEC = 0;       // tổng thời gian được phép (đếm ngược)
+let started = false;
+let resumeElapsed = 0;
+let TOTAL_SEC = 0;
 
-// ---- chống thoát tab: 2 lần đầu cảnh báo, lần thứ 3 nộp bài luôn ----
 const MAX_LEAVES = 3;
 let leaveCount = 0;
-let leaveLock = false;   // gộp blur + visibilitychange của cùng 1 lần thoát
-let lastLeaveTs = 0;     // chống đếm 2 lần cho cùng một thao tác chuyển tab
+let leaveLock = false;
+let lastLeaveTs = 0;
 
 function optEl(img, letter) {
   return `<label class="opt" data-img="${img}" data-letter="${letter}">
@@ -151,7 +148,6 @@ function onPick(img, letter, idx) {
   saveState();
 }
 
-// Lưu bài làm đang dở (đáp án + cờ + thời gian đã dùng) để vào lại làm tiếp
 function saveState() {
   if (submitted || !started) return;
   const elapsedSec = Math.min((Date.now() - startTs) / 1000, TOTAL_SEC);
@@ -162,7 +158,7 @@ function saveState() {
     leaveCount,
     total: EXAM.count,
     mode: MODE === 'r20' ? 'r20' : 'full',
-    subset: EXAM.images.slice(),   // để vào lại giữ đúng bộ câu (nhất là khi random)
+    subset: EXAM.images.slice(),
     savedAt: new Date().toISOString(),
   });
 }
@@ -174,16 +170,15 @@ function updateLeaveCount() {
   el.style.color = leaveCount >= MAX_LEAVES - 1 ? 'var(--red)' : 'var(--amber)';
 }
 
-// Học viên rời trang (chuyển tab / thu nhỏ / mở app khác).
 function onLeaveExam() {
   if (REVIEW || submitted || !started || leaveLock) return;
-  // blur và visibilitychange cùng bắn cho 1 thao tác chuyển tab -> chỉ tính lần đầu
+
   if (Date.now() - lastLeaveTs < 1500) return;
   leaveLock = true;
   lastLeaveTs = Date.now();
   leaveCount++;
   updateLeaveCount();
-  saveState();   // ghi lại ngay, tải lại trang không xoá được số lần đã thoát
+  saveState();
 
   if (leaveCount >= MAX_LEAVES) {
     gradeAndShow(Math.min((Date.now() - startTs) / 1000, TOTAL_SEC), true, true);
@@ -196,7 +191,6 @@ function onLeaveExam() {
   document.getElementById('leaveOverlay').style.display = 'flex';
 }
 
-// Trở lại trang: mở khoá để lần thoát sau được tính tiếp.
 function onReturnExam() { leaveLock = false; }
 
 document.addEventListener('visibilitychange', () => {
@@ -218,18 +212,18 @@ function tick() {
     return;
   }
   el.textContent = fmtTime(remaining);
-  el.style.color = remaining <= 60 ? 'var(--red)' : '';   // 1 phút cuối: đỏ
-  saveState();   // lưu lại thời gian còn lại mỗi giây
+  el.style.color = remaining <= 60 ? 'var(--red)' : '';
+  saveState();
 }
 
 function gradeAndShow(timeSec, persist, byLeaving) {
   submitted = true;
   document.getElementById('leaveOverlay').style.display = 'none';
   if (timerInt) clearInterval(timerInt);
-  if (persist) clearInProgress(EXAM_ID);   // đã nộp -> không khôi phục nữa
+  if (persist) clearInProgress(EXAM_ID);
   let correct = 0;
   const hasKeyData = KEY && Object.keys(KEY).length > 0;
-  const details = []; // chi tiết từng câu để gửi lên Sheet
+  const details = [];
 
   EXAM.images.forEach((img, idx) => {
     const pick = picks[img];
@@ -239,10 +233,9 @@ function gradeAndShow(timeSec, persist, byLeaving) {
     const mark = document.getElementById(`mark-${idx}`);
     const nav = document.getElementById(`nav-${idx}`);
 
-    // khoá lựa chọn
     document.querySelectorAll(`#opts-${idx} .opt`).forEach(o => {
       o.style.pointerEvents = 'none';
-      if (ans && o.dataset.letter === ans) o.classList.add('key');       // viền xanh: đáp án đúng
+      if (ans && o.dataset.letter === ans) o.classList.add('key');
       if (pick && o.dataset.letter !== ans && o.dataset.letter === pick) o.classList.add('badpick');
     });
 
@@ -263,7 +256,6 @@ function gradeAndShow(timeSec, persist, byLeaving) {
     + (byLeaving ? ` · ⚠ tự nộp do rời trang ${leaveCount} lần` : '')
     + (!byLeaving && leaveCount ? ` · ⚠ rời trang ${leaveCount} lần` : '');
 
-  // hiện điểm thay cho timer
   const tb = document.getElementById('timerbox');
   tb.innerHTML = hasKeyData
     ? `<div class="muted small">Kết quả</div>
@@ -288,12 +280,11 @@ function gradeAndShow(timeSec, persist, byLeaving) {
       finishedAt,
       picks: { ...picks },
       mode: MODE === 'r20' ? 'r20' : 'full',
-      images: EXAM.images.slice(),   // đúng bộ câu đã làm (để xem lại chuẩn khi random)
+      images: EXAM.images.slice(),
     };
     saveResult(result);
     toast('Đã lưu kết quả');
 
-    // gửi về Google Sheet cho admin (nếu đã cấu hình endpoint)
     if (RESULTS_ENDPOINT) {
       const tb = document.getElementById('timerbox');
       tb.insertAdjacentHTML('beforeend', '<div class="muted small" id="sheetStatus" style="margin-top:6px">⏳ Đang gửi kết quả…</div>');
@@ -303,12 +294,12 @@ function gradeAndShow(timeSec, persist, byLeaving) {
         mode: modeStr,
         score, correct, total: EXAM.count,
         timeSec: Math.round(timeSec), timeMMSS: fmtTime(timeSec), finishedAt,
-        images: EXAM.images.slice(),                              // bộ câu đã làm (để chấm lại chính xác)
-        details,                                                  // chi tiết từng câu
+        images: EXAM.images.slice(),
+        details,
         picksStr: details.map(d => `${d.n}.${d.pick || '-'}`).join(' '),
         keyStr:   details.map(d => `${d.n}.${d.ans || '-'}`).join(' '),
         resultStr: details.map(d => `${d.n}.${d.ok ? 'Đ' : 'S'}`).join(' '),
-        wrongStr: details.filter(d => d.ans && !d.ok).map(d => d.n).join(', '), // các câu sai
+        wrongStr: details.filter(d => d.ans && !d.ok).map(d => d.n).join(', '),
       }).then(() => {
         const st = document.getElementById('sheetStatus');
         if (st) { st.textContent = '✅ Đã gửi kết quả cho giảng viên'; st.style.color = 'var(--green)'; }
@@ -321,7 +312,7 @@ function gradeAndShow(timeSec, persist, byLeaving) {
 function submit() {
   const unanswered = EXAM.count - Object.keys(picks).length;
   if (unanswered > 0) {
-    // hộp confirm làm mất focus cửa sổ -> khoá lại để không bị tính là rời trang
+
     leaveLock = true;
     const go = confirm(`Còn ${unanswered} câu chưa chọn. Vẫn nộp?`);
     setTimeout(() => { leaveLock = false; }, 300);
@@ -341,19 +332,18 @@ function submit() {
   if (!EXAM) { document.getElementById('title').textContent = 'Không tìm thấy đề: ' + EXAM_ID; return; }
   KEY = ANSWERS[EXAM_ID] || {};
 
-  // ---- Xác định danh sách câu sẽ làm: full, random ~20 câu, hoặc xem lại ----
   const fullImages = EXAM.images.slice();
   const savedState = getInProgress(EXAM_ID);
   const lastResult = REVIEW ? getResults().find(r => r.examId === EXAM_ID) : null;
 
   if (REVIEW && lastResult && Array.isArray(lastResult.images) && lastResult.images.length) {
-    // Xem lại đúng bộ câu của lần làm gần nhất (nếu lần đó là random)
+
     EXAM.images = lastResult.images.filter(im => fullImages.includes(im));
     EXAM.count = EXAM.images.length;
   } else if (!REVIEW && MODE === 'r20') {
     let subset;
     if (savedState && savedState.mode === 'r20' && Array.isArray(savedState.subset) && savedState.subset.length) {
-      subset = savedState.subset.filter(im => fullImages.includes(im)); // giữ đúng bộ đang làm dở
+      subset = savedState.subset.filter(im => fullImages.includes(im));
     }
     if (!subset || !subset.length) subset = pickDistributed(fullImages, 2, 10);
     EXAM.images = subset;
@@ -382,7 +372,7 @@ function submit() {
   });
 
   if (REVIEW) {
-    // nạp lại bài làm gần nhất để xem lại (không tính giờ)
+
     const last = getResults().find(r => r.examId === EXAM_ID);
     if (last && last.picks) {
       Object.assign(picks, last.picks);
@@ -400,7 +390,6 @@ function submit() {
     return;
   }
 
-  // khôi phục bài làm dở (nếu lần trước thoát giữa chừng chưa nộp)
   const saved = getInProgress(EXAM_ID);
   if (saved) {
     Object.assign(picks, saved.picks || {});
@@ -414,7 +403,7 @@ function submit() {
     (saved.flags || []).forEach(idx => { if (!flags.has(idx)) toggleFlag(idx); });
     updateAnsweredCount();
     resumeElapsed = Math.min(saved.elapsedSec || 0, TOTAL_SEC);
-    leaveCount = saved.leaveCount || 0;   // tải lại trang không xoá được số lần đã rời
+    leaveCount = saved.leaveCount || 0;
     updateLeaveCount();
   }
 
@@ -422,7 +411,6 @@ function submit() {
     document.getElementById('leaveOverlay').style.display = 'none';
   });
 
-  // rời trang giữa chừng mà chưa nộp -> cảnh báo + lưu lại bài làm/thời gian
   window.addEventListener('beforeunload', (e) => {
     if (started && !submitted) { saveState(); e.preventDefault(); e.returnValue = ''; }
   });
@@ -431,7 +419,6 @@ function submit() {
   startExamFlow();
 })();
 
-// Hiện form nhập Họ tên + MSSV (nếu chưa có), xong mới bắt đầu tính giờ
 function startExamFlow() {
   const s = getStudent();
   if (s.name && s.mssv) { beginExam(); return; }
@@ -462,7 +449,7 @@ function beginExam() {
 
 function startTimer() {
   started = true;
-  startTs = Date.now() - resumeElapsed * 1000;  // tiếp tục từ thời gian đã làm
+  startTs = Date.now() - resumeElapsed * 1000;
   tick();
   timerInt = setInterval(tick, 1000);
 }

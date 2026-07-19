@@ -1,32 +1,17 @@
-/* ============================================================
-   App dùng chung cho web thi trắc nghiệm MAD101 (web tĩnh)
-   - manifest.json : danh sách đề + ảnh câu hỏi
-   - answers.json  : đáp án đúng (admin quản lý, commit vào repo)
-   - localStorage  : tiến độ & kết quả của từng học viên (theo máy)
-   ============================================================ */
-
 const OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
-// Thời gian cho mỗi câu (giây). 1 phút = 60 giây. Đổi tại đây nếu muốn.
 const SEC_PER_QUESTION = 60;
 
-// ---- localStorage keys ----
-const LS_PROGRESS = 'mad101.progress.v1'; // { [examId]: {done, bestScore, lastScore, lastTimeSec, attempts, lastAt} }
-const LS_RESULTS  = 'mad101.results.v1';  // [ {examId, section, examName, total, correct, score, timeSec, finishedAt, picks} ]
-const LS_ADMIN    = 'mad101.admin.v1';    // "1" nếu đã đăng nhập admin
-const LS_STUDENT  = 'mad101.student.v1';  // { name, mssv }
-const LS_INPROG   = 'mad101.inprogress.v1'; // { [examId]: {picks, flags, elapsedSec, total, savedAt} }
+const LS_PROGRESS = 'mad101.progress.v1';
+const LS_RESULTS  = 'mad101.results.v1';
+const LS_ADMIN    = 'mad101.admin.v1';
+const LS_STUDENT  = 'mad101.student.v1';
+const LS_INPROG   = 'mad101.inprogress.v1';
 
-// ---- Đổi mật khẩu admin tại đây (lưu ý: web tĩnh không bảo mật thật,
-//      ai xem source cũng thấy — chỉ để tránh học viên bấm nhầm vào trang admin) ----
 const ADMIN_PASSWORD = 'mad101';
 
-// ---- Gom kết quả về Google Sheet ----
-// Dán link Web App của Google Apps Script vào đây (xem README mục "Gom kết quả").
-// Để trống "" nếu chưa dùng — khi đó kết quả chỉ lưu trên máy học viên.
 const RESULTS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwlLKvNcLXnuboxoejzM3fD2ZW5CrDikKJeBoxBI66aS4NxvntbwYm7tymPOwsMThw5HQ/exec';
 
-// ---------- fetch helpers ----------
 async function loadManifest() {
   const res = await fetch('data/manifest.json', { cache: 'no-store' });
   if (!res.ok) throw new Error('Không tải được data/manifest.json');
@@ -40,7 +25,6 @@ async function loadAnswers() {
   } catch { return {}; }
 }
 
-// ảnh có dấu cách / tiếng Việt trong tên folder -> phải encode từng đoạn
 function imgUrl(examId, img) {
   return examId.split('/').map(encodeURIComponent).join('/') + '/' + encodeURIComponent(img);
 }
@@ -53,7 +37,6 @@ function findExam(manifest, examId) {
   return null;
 }
 
-// ---------- localStorage ----------
 function getJSON(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
   catch { return fallback; }
@@ -64,7 +47,7 @@ function getProgress() { return getJSON(LS_PROGRESS, {}); }
 function getResults() { return getJSON(LS_RESULTS, []); }
 
 function saveResult(result) {
-  // result: {examId, section, examName, total, correct, score, timeSec, finishedAt, picks}
+
   const results = getResults();
   results.unshift(result);
   setJSON(LS_RESULTS, results);
@@ -81,17 +64,13 @@ function saveResult(result) {
   setJSON(LS_PROGRESS, prog);
 }
 
-// ---------- thông tin học viên ----------
 function getStudent() { return getJSON(LS_STUDENT, { name: '', mssv: '' }); }
 function setStudent(s) { setJSON(LS_STUDENT, s); }
 
-// ---------- lưu bài làm đang dở (để vào lại làm tiếp) ----------
 function getInProgress(examId) { const all = getJSON(LS_INPROG, {}); return all[examId] || null; }
 function setInProgress(examId, state) { const all = getJSON(LS_INPROG, {}); all[examId] = state; setJSON(LS_INPROG, all); }
 function clearInProgress(examId) { const all = getJSON(LS_INPROG, {}); delete all[examId]; setJSON(LS_INPROG, all); }
 
-// Gửi kết quả về Google Sheet (nếu đã cấu hình RESULTS_ENDPOINT).
-// Dùng no-cors + body text → không bị chặn CORS, không cần đọc phản hồi (gửi là xong).
 function submitResultToSheet(payload) {
   if (!RESULTS_ENDPOINT) return Promise.resolve(false);
   return fetch(RESULTS_ENDPOINT, {
@@ -102,9 +81,6 @@ function submitResultToSheet(payload) {
   }).then(() => true).catch(() => false);
 }
 
-// ---------- Chấm lại kết quả đã nộp theo đáp án mới (admin) ----------
-// Gửi yêu cầu chấm lại (kèm đáp án + thứ tự câu) lên Apps Script. Fire-and-forget như trên;
-// kết quả tóm tắt đọc lại bằng JSONP (fetchRegradeSummary) để tránh CORS.
 function submitRegradeToSheet(payload) {
   if (!RESULTS_ENDPOINT) return Promise.resolve(false);
   return fetch(RESULTS_ENDPOINT, {
@@ -115,7 +91,6 @@ function submitRegradeToSheet(payload) {
   }).then(() => true).catch(() => false);
 }
 
-// Đọc dữ liệu từ Apps Script qua JSONP (thẻ <script>) — không vướng CORS như fetch GET.
 function jsonp(url, timeoutMs) {
   return new Promise((resolve, reject) => {
     const cb = '__jsonp_' + Math.random().toString(36).slice(2);
@@ -130,22 +105,17 @@ function jsonp(url, timeoutMs) {
   });
 }
 
-// Lấy tóm tắt lần chấm lại gần nhất (Apps Script lưu trong Script Properties).
 function fetchRegradeSummary() {
   if (!RESULTS_ENDPOINT) return Promise.resolve(null);
   return jsonp(RESULTS_ENDPOINT + '?action=summary').catch(() => null);
 }
 
-// ---------- chọn ngẫu nhiên phân bố đều ----------
-// Lấy `per` phần tử ngẫu nhiên trong mỗi khối `block` phần tử liên tiếp,
-// giữ nguyên thứ tự gốc. Ví dụ pickDistributed(images, 2, 10):
-//   10 câu đầu random 2 câu, 10 câu sau random 2 câu, ...
 function pickDistributed(arr, per, block) {
   const out = [];
   for (let start = 0; start < arr.length; start += block) {
     const chunk = arr.slice(start, start + block);
     const idxs = chunk.map((_, i) => i);
-    // xáo trộn Fisher–Yates rồi lấy `per` chỉ số đầu, sắp lại theo thứ tự gốc
+
     for (let i = idxs.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [idxs[i], idxs[j]] = [idxs[j], idxs[i]];
@@ -156,7 +126,6 @@ function pickDistributed(arr, per, block) {
   return out;
 }
 
-// ---------- format ----------
 function fmtTime(sec) {
   sec = Math.max(0, Math.round(sec));
   const m = Math.floor(sec / 60), s = sec % 60;
@@ -171,7 +140,6 @@ function pct(correct, total) {
   return total ? Math.round((correct / total) * 1000) / 10 : 0;
 }
 
-// ---------- download ----------
 function downloadFile(filename, text, mime) {
   const blob = new Blob([text], { type: mime || 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -181,7 +149,6 @@ function downloadFile(filename, text, mime) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-// ---------- toast ----------
 let _toastTimer;
 function toast(msg) {
   let el = document.querySelector('.toast');
@@ -191,7 +158,6 @@ function toast(msg) {
   _toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
 }
 
-// ---------- admin auth (chỉ là cổng UI, không phải bảo mật thật) ----------
 function isAdmin() { return localStorage.getItem(LS_ADMIN) === '1'; }
 function loginAdmin(pw) {
   if (pw === ADMIN_PASSWORD) { localStorage.setItem(LS_ADMIN, '1'); return true; }
@@ -199,7 +165,6 @@ function loginAdmin(pw) {
 }
 function logoutAdmin() { localStorage.removeItem(LS_ADMIN); }
 
-// ---------- shared topbar ----------
 function renderTopbar(active) {
   const links = [
     ['index.html', 'Đề thi'],

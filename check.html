@@ -10,7 +10,7 @@
 <div id="top"></div>
 <div class="container wide">
 
-  <!-- LOGIN (dùng chung cổng admin) -->
+  
   <div id="loginView" style="display:none">
     <h1>Đăng nhập Admin</h1>
     <p class="muted">Khu vực chấm tay dành cho giảng viên. Nhập mật khẩu để tiếp tục.</p>
@@ -25,7 +25,7 @@
     </div>
   </div>
 
-  <!-- MAIN -->
+  
   <div id="mainView" style="display:none">
     <div class="flex" style="justify-content:space-between">
       <div>
@@ -57,7 +57,7 @@
       <select id="exam" style="width:100%"></select>
       <div class="muted small" id="examCountInfo" style="margin-top:4px"></div>
 
-      <!-- Đề >100 câu: full hay cắt -->
+      
       <div id="cutBox" style="display:none">
         <div class="spacer"></div>
         <label class="small muted">Cách làm của học viên</label><br>
@@ -105,7 +105,7 @@ function showView() {
   document.getElementById('mainView').style.display  = isAdmin() ? 'block' : 'none';
 }
 
-// ---- login ----
+
 document.getElementById('loginBtn').addEventListener('click', doLogin);
 document.getElementById('pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 function doLogin() {
@@ -113,14 +113,14 @@ function doLogin() {
   else document.getElementById('loginErr').textContent = 'Sai mật khẩu.';
 }
 
-// ---- chọn đề ----
+
 function examsOf(sec) { return (MANIFEST.sections[sec] || []); }
 
-// bỏ dấu + thường hoá để tìm kiếm dễ chịu (gõ "su 2024" ra "SU 2024")
+
 function norm(s) {
   return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/([a-z])(\d)/g, '$1 $2').replace(/(\d)([a-z])/g, '$1 $2')  // FA25 -> fa 25
+    .replace(/([a-z])(\d)/g, '$1 $2').replace(/(\d)([a-z])/g, '$1 $2')
     .replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
@@ -160,11 +160,11 @@ function updateCover() {
   el.style.color = has >= ex.count ? 'var(--green)' : (has ? 'var(--amber)' : 'var(--red)');
 }
 
-// ---- full đề / cắt đề ----
+
 function isBigExam(ex) { return !!ex && ex.count > 100; }
 function cutMode() { return document.querySelector('input[name="cutMode"]:checked').value; }
 
-// Hiện/ẩn khối chọn full–cắt theo đề đang chọn.
+
 function onExamChange() {
   const ex = currentExam();
   document.getElementById('cutBox').style.display = isBigExam(ex) ? 'block' : 'none';
@@ -174,12 +174,12 @@ function onExamChange() {
   updateImgsInfo();
 }
 
-// Tách list ảnh từ ô nhập: nhận JSON ["01.jpg",…], hoặc phân cách bằng dấu phẩy/xuống dòng/khoảng trắng.
+
 function parseImageList(text) {
   return (text.match(/[\w.\-]+\.(?:jpe?g|png|webp)/gi) || []);
 }
 
-// Danh sách ảnh sẽ chấm: full đề, hoặc đúng bộ câu học viên đã làm (theo thứ tự dán vào).
+
 function activeImages(ex) {
   if (!ex) return [];
   if (!isBigExam(ex) || cutMode() === 'full') return ex.images;
@@ -203,8 +203,7 @@ function updateImgsInfo() {
   el.style.color = bad ? 'var(--amber)' : 'var(--green)';
 }
 
-// ---- parse đáp án học viên ----
-// Trả về { n(1-based): 'A' } và số câu nhận dạng được.
+
 function parseStudentAnswers(text, count) {
   const picks = {};
   const numRe = /(\d+)\s*[=.:)\-]?\s*([A-Fa-f])(?![A-Za-z])/g;
@@ -214,13 +213,13 @@ function parseStudentAnswers(text, count) {
     if (idx >= 1 && idx <= count) { picks[idx] = m[2].toUpperCase(); nHits++; }
   }
   if (nHits) return { picks, mode: 'số câu', hits: nHits };
-  // không thấy cặp số–chữ → coi là dãy theo thứ tự
+
   const letters = (text.toUpperCase().match(/[A-F]/g) || []);
   letters.slice(0, count).forEach((l, i) => picks[i + 1] = l);
   return { picks, mode: 'thứ tự', hits: Math.min(letters.length, count) };
 }
 
-// ---- chấm & hiển thị ----
+
 function optBox(letter, pick, ans) {
   const cls = ['opt'];
   if (letter === pick) cls.push('sel');
@@ -242,7 +241,7 @@ function grade() {
   document.getElementById('parseInfo').textContent = `Đọc được ${hits}/${TOTAL} câu (kiểu: ${mode})`;
 
   let correct = 0, answered = 0;
-  const navCls = [];   // class cho từng ô ma trận
+  const navCls = [];
   const cards = IMGS.map((img, i) => {
     const n = i + 1;
     const pick = picks[n] || '';
@@ -251,7 +250,7 @@ function grade() {
     const ok = ans && pick === ans;
     if (ok) correct++;
 
-    // màu ô ma trận: đúng=xanh, sai=đỏ; chưa có đáp án thì xanh dương nếu đã chọn
+
     navCls[i] = !ans ? (pick ? 'answered' : '') : (ok ? 'correct' : 'wrong');
 
     let mark;
@@ -262,7 +261,7 @@ function grade() {
       : `<span style="color:var(--red)">Bỏ trống (đúng là ${ans})</span>`;
 
     const cardCls = !ans ? '' : (ok ? 'correct' : 'wrong');
-    // khi cắt đề: kèm số câu gốc trong đề để dễ đối chiếu
+
     const orig = TOTAL === ex.count ? '' :
       ` <span class="muted">(đề: câu ${ex.images.indexOf(img) + 1})</span>`;
     return `

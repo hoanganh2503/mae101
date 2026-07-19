@@ -1,33 +1,8 @@
-/**
- * MAD101 — Nhận kết quả thi và ghi vào Google Sheet + Chấm lại theo đáp án mới.
- *
- * CÁCH DÙNG (làm 1 lần):
- *  1. Tạo 1 Google Sheet trống (sheets.new).
- *  2. Trong Sheet: menu Extensions (Tiện ích mở rộng) → Apps Script.
- *  3. Xoá code mẫu, dán TOÀN BỘ file này vào, bấm Save.
- *  4. Bấm Deploy (Triển khai) → New deployment → chọn type "Web app".
- *       - Description: tuỳ ý
- *       - Execute as:  Me (chính bạn)
- *       - Who has access:  Anyone  (Bất kỳ ai)  ← bắt buộc để web gửi được
- *     Bấm Deploy, cấp quyền (Authorize) khi được hỏi.
- *  5. Copy "Web app URL" (dạng https://script.google.com/macros/s/..../exec).
- *  6. Dán URL đó vào biến RESULTS_ENDPOINT trong assets/app.js, rồi commit/push.
- *
- * Mỗi lần học viên nộp bài, một dòng mới sẽ tự thêm vào sheet "KetQua".
- *
- * CHẤM LẠI: Khi admin sửa đáp án (đã commit data/answers.json), vào trang admin.html
- * bấm "Chấm lại & cập nhật Sheet". Web gửi đáp án mới lên đây; script tính lại điểm cho
- * TẤT CẢ bài đã nộp (dựa trên lựa chọn từng câu đã lưu) và cập nhật ngay trên Sheet.
- *
- * Khi bạn sửa code này, nhớ Deploy → Manage deployments → Edit → Version: New version.
- */
-
 var SHEET_NAME = 'KetQua';
 var HEADERS = ['Thời điểm nhận', 'Họ tên', 'MSSV', 'Bộ', 'Tên đề', 'Mã đề',
                'Điểm (%)', 'Đúng', 'Tổng', 'Thời gian (giây)', 'Thời gian (mm:ss)', 'Nộp lúc',
                'HV chọn', 'Đáp án đúng', 'Đúng/Sai', 'Câu sai', 'Chế độ', 'Ảnh (JSON)', 'Chấm lại lúc'];
 
-// Chỉ số cột (0-based) khớp HEADERS ở trên
 var COL = { SCORE: 6, CORRECT: 7, TOTAL: 8, PICKS: 12, KEY: 13, RESULT: 14, WRONG: 15,
             EXAMID: 5, MODE: 16, IMAGES: 17, REGRADED: 18 };
 
@@ -39,7 +14,6 @@ function doPost(e) {
   return handleSubmit_(data);
 }
 
-// Mở URL bằng trình duyệt để kiểm tra đã deploy đúng chưa + trả tóm tắt chấm lại (JSONP).
 function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.action === 'summary') {
@@ -49,17 +23,15 @@ function doGet(e) {
   return ContentService.createTextOutput('MAD101 results endpoint OK');
 }
 
-// ---------------- Ghi 1 bài mới nộp ----------------
 function handleSubmit_(d) {
   var lock = LockService.getScriptLock();
-  lock.waitLock(30000); // tránh ghi đè khi nhiều bài nộp cùng lúc
+  lock.waitLock(30000);
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sh = ss.getSheetByName(SHEET_NAME);
     if (!sh) sh = ss.insertSheet(SHEET_NAME);
     ensureHeaders_(sh);
 
-    // 3 cột chi tiết: ưu tiên chuỗi đã định dạng từ web, nếu không thì tự dựng từ details
     var picksStr = d.picksStr, keyStr = d.keyStr, resultStr = d.resultStr, wrongStr = d.wrongStr;
     if ((!picksStr || !keyStr || !resultStr) && d.details && d.details.length) {
       picksStr  = d.details.map(function (x) { return x.n + '.' + (x.pick || '-'); }).join(' ');
@@ -71,7 +43,6 @@ function handleSubmit_(d) {
                           .map(function (x) { return x.n; }).join(', ');
     }
 
-    // Lưu bộ câu (ảnh) của lượt làm này để sau có thể chấm lại chính xác (kể cả random)
     var imagesJson = (d.images && d.images.length) ? JSON.stringify(d.images) : '';
 
     sh.appendRow([
@@ -91,8 +62,6 @@ function handleSubmit_(d) {
   }
 }
 
-// ---------------- Chấm lại toàn bộ theo đáp án mới ----------------
-// data = { action:'regrade', requestId, answers:{examId:{img:letter}}, order:{examId:[img,...]} }
 function handleRegrade_(data) {
   var lock = LockService.getScriptLock();
   lock.waitLock(60000);
@@ -123,9 +92,6 @@ function handleRegrade_(data) {
       var key = answers[examId];
       if (!key) { summary.skippedNoKey++; continue; }
 
-      // Xác định bộ câu (ảnh) theo từng số câu:
-      // 1) ưu tiên cột "Ảnh (JSON)" đã lưu khi nộp (đúng cho cả full lẫn random)
-      // 2) fallback cho bài cũ chưa lưu ảnh: dùng thứ tự manifest nếu là bài full (đủ số câu)
       var images = null;
       var imagesJson = String(row[COL.IMAGES] || '');
       if (imagesJson) { try { images = JSON.parse(imagesJson); } catch (e) { images = null; } }
@@ -171,8 +137,6 @@ function handleRegrade_(data) {
   }
 }
 
-// ---------------- helpers ----------------
-// "1.A 2.- 3.C" -> { 1:'A', 2:'', 3:'C' }
 function parsePicks_(str) {
   var out = {};
   (str || '').split(/\s+/).forEach(function (tok) {

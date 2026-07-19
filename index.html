@@ -28,7 +28,6 @@
   <div id="list"></div>
 </div>
 
-<!-- Lớp phủ chọn cách làm cho đề nhiều câu (>100) -->
 <div id="modeOverlay" class="overlay" style="display:none">
   <div class="card" style="max-width:440px;width:100%">
     <h2 style="margin-top:0" id="modeTitle">Chọn cách làm</h2>
@@ -72,11 +71,11 @@ function examCard(exam) {
   const bigExam = exam.count > 100;
   let primaryBtn;
   if (inprog) {
-    // Tiếp tục: giữ đúng chế độ đang làm dở
+
     const m = inprog.mode === 'r20' ? '&mode=r20' : '';
     primaryBtn = `<a class="btn" href="${startHref}${m}">Tiếp tục →</a>`;
   } else if (bigExam) {
-    // Đề >100 câu: cho chọn làm full hay random ~20 câu
+
     primaryBtn = `<button class="btn js-choose" data-exam="${exam.id}" data-count="${exam.count}">${done ? 'Làm lại' : 'Vào làm'} →</button>`;
   } else {
     primaryBtn = `<a class="btn" href="${startHref}">${done ? 'Làm lại' : 'Vào làm'} →</a>`;
@@ -133,7 +132,6 @@ function render() {
   document.getElementById('stat').textContent = `Đã làm ${doneCount}/${total} đề`;
 }
 
-// Modal chọn "Làm full" hay "Random ~20 câu" cho đề >100 câu
 function setupModeChooser() {
   const ov = document.getElementById('modeOverlay');
   const desc = document.getElementById('modeDesc');
@@ -148,7 +146,7 @@ function setupModeChooser() {
     if (!b) return;
     curId = b.dataset.exam;
     const count = Number(b.dataset.count);
-    const rand = 2 * Math.ceil(count / 10);   // 2 câu mỗi 10 câu
+    const rand = 2 * Math.ceil(count / 10);
     desc.textContent = `Đề này có ${count} câu. Chọn làm toàn bộ, hoặc random ${rand} câu (mỗi 10 câu lấy ngẫu nhiên 2 câu). Đáp án & kết quả vẫn được chấm và gửi đầy đủ.`;
     btnFull.textContent = `Làm full (${count} câu)`;
     btnRand.textContent = `🎲 Random ${rand} câu (2 câu mỗi 10 câu)`;
