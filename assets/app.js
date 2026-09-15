@@ -2,15 +2,15 @@ const OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 const SEC_PER_QUESTION = 60;
 
-const LS_PROGRESS = 'mad101.progress.v1';
-const LS_RESULTS  = 'mad101.results.v1';
-const LS_ADMIN    = 'mad101.admin.v1';
-const LS_STUDENT  = 'mad101.student.v1';
-const LS_INPROG   = 'mad101.inprogress.v1';
+const LS_PROGRESS = 'mae101.progress.v1';
+const LS_RESULTS  = 'mae101.results.v1';
+const LS_ADMIN    = 'mae101.admin.v1';
+const LS_STUDENT  = 'mae101.student.v1';
+const LS_INPROG   = 'mae101.inprogress.v1';
 
-const ADMIN_PASSWORD = 'mad101';
+const ADMIN_PASSWORD = 'mae101';
 
-const RESULTS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwlLKvNcLXnuboxoejzM3fD2ZW5CrDikKJeBoxBI66aS4NxvntbwYm7tymPOwsMThw5HQ/exec';
+const RESULTS_ENDPOINT = 'https://script.google.com/macros/s/AKfycby5aGheQXzL_NAg-VbEebEYNYPhoCQ1Fg5cf1zByqYRFa9Zd01xHBLvyJQVX3p6Y06m/exec';
 
 async function loadManifest() {
   const res = await fetch('data/manifest.json', { cache: 'no-store' });
@@ -173,7 +173,7 @@ function renderTopbar(active) {
   ];
   return `
   <div class="topbar"><div class="inner">
-    <div class="brand">MAD<span>101</span> · Thi thử</div>
+    <div class="brand">MAE<span>101</span> · Thi thử</div>
     <div class="grow"></div>
     <nav class="nav">
       ${links.map(([h, t]) => `<a href="${h}" class="${active === h ? 'active' : ''}">${t}</a>`).join('')}

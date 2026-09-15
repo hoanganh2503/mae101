@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kết quả của tôi · MAD101</title>
+<title>Kết quả của tôi · MAE101</title>
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -82,16 +82,16 @@ function toCSV() {
 
 document.getElementById('csvBtn').addEventListener('click', () => {
   if (!getResults().length) return toast('Chưa có kết quả');
-  downloadFile('mad101-ket-qua.csv', toCSV(), 'text/csv;charset=utf-8');
+  downloadFile('mae101-ket-qua.csv', toCSV(), 'text/csv;charset=utf-8');
 });
 document.getElementById('jsonBtn').addEventListener('click', () => {
   if (!getResults().length) return toast('Chưa có kết quả');
-  downloadFile('mad101-ket-qua.json', JSON.stringify(getResults(), null, 2), 'application/json');
+  downloadFile('mae101-ket-qua.json', JSON.stringify(getResults(), null, 2), 'application/json');
 });
 document.getElementById('clearBtn').addEventListener('click', () => {
   if (!confirm('Xoá toàn bộ lịch sử kết quả & đánh dấu đã làm trên máy này?')) return;
-  localStorage.removeItem('mad101.results.v1');
-  localStorage.removeItem('mad101.progress.v1');
+  localStorage.removeItem('mae101.results.v1');
+  localStorage.removeItem('mae101.progress.v1');
   render(); toast('Đã xoá');
 });
 

@@ -1,5 +1,5 @@
 {
-  "PT/MAD101 - Test2 - SP 2024": {
+  "PT/MAE101 - Test2 - SP 2024": {
     "01.jpg": "C",
     "02.jpg": "D",
     "03.jpg": "C",
@@ -18,7 +18,7 @@
     "07.jpg": "C",
     "12.jpg": "F"
   },
-  "FE/MAD101_SP26_FE": {
+  "FE/MAE101_SP26_FE": {
     "01.jpg": "D",
     "02.jpg": "A",
     "03.jpg": "C",
@@ -70,7 +70,7 @@
     "49.jpg": "C",
     "50.jpg": "D"
   },
-  "FE/MAD101 - FA25 - FE": {
+  "FE/MAE101 - FA25 - FE": {
     "01.jpg": "A",
     "02.jpg": "B",
     "03.jpg": "A",
@@ -122,7 +122,7 @@
     "49.jpg": "D",
     "50.jpg": "C"
   },
-  "FE/MAD101 - SP 2025 - FE": {
+  "FE/MAE101 - SP 2025 - FE": {
     "01.jpg": "D",
     "02.jpg": "E",
     "03.jpg": "A",
@@ -174,7 +174,7 @@
     "49.jpg": "E",
     "50.jpg": "B"
   },
-  "FE/MAD101 - SU25 - B5 - FE": {
+  "FE/MAE101 - SU25 - B5 - FE": {
     "01.jpg": "B",
     "02.jpg": "C",
     "03.jpg": "A",
@@ -226,7 +226,7 @@
     "49.jpg": "A",
     "50.jpg": "D"
   },
-  "FE/MAD101 - SU25 - FE": {
+  "FE/MAE101 - SU25 - FE": {
     "01.jpg": "A",
     "02.jpg": "D",
     "03.jpg": "C",
@@ -278,7 +278,7 @@
     "49.jpg": "B",
     "50.jpg": "E"
   },
-  "RE/MAD101 - SP26 - RE": {
+  "RE/MAE101 - SP26 - RE": {
     "01.jpg": "B",
     "02.jpg": "B",
     "03.jpg": "D",
@@ -330,7 +330,7 @@
     "49.jpg": "D",
     "50.jpg": "A"
   },
-  "RE/MAD101 - FA25 - RE": {
+  "RE/MAE101 - FA25 - RE": {
     "01.jpg": "C",
     "02.jpg": "A",
     "03.jpg": "A",
@@ -382,7 +382,7 @@
     "49.jpg": "D",
     "50.jpg": "A"
   },
-  "RE/MAD101 - SP 2025 - RE": {
+  "RE/MAE101 - SP 2025 - RE": {
     "01.jpg": "E",
     "02.jpg": "D",
     "03.jpg": "B",
@@ -435,7 +435,7 @@
     "50.jpg": "A",
     "51.jpg": "D"
   },
-  "RE/MAD101 - SU25 - B5 - RE": {
+  "RE/MAE101 - SU25 - B5 - RE": {
     "01.jpg": "D",
     "02.jpg": "C",
     "03.jpg": "D",
@@ -487,7 +487,7 @@
     "49.jpg": "C",
     "50.jpg": "A"
   },
-  "RE/MAD101 - SU25 - RE": {
+  "RE/MAE101 - SU25 - RE": {
     "01.jpg": "A",
     "02.jpg": "B",
     "03.jpg": "A",
@@ -540,7 +540,7 @@
     "50.jpg": "D",
     "51.jpg": "B"
   },
-  "PT/MAD101 - PT3 - SU 2025": {
+  "PT/MAE101 - PT3 - SU 2025": {
     "01.jpg": "E",
     "02.jpg": "C",
     "03.jpg": "E",
@@ -557,7 +557,7 @@
     "14.jpg": "D",
     "15.jpg": "C"
   },
-  "PT/MAD101 - QUIZ - SL3 - SU 2025": {
+  "PT/MAE101 - QUIZ - SL3 - SU 2025": {
     "01.jpg": "D",
     "02.jpg": "C",
     "03.jpg": "A",
@@ -570,7 +570,7 @@
     "10.jpg": "B",
     "11.jpg": "D"
   },
-  "PT/MAD101 - SP 2025 - BL3 - Quiz2": {
+  "PT/MAE101 - SP 2025 - BL3 - Quiz2": {
     "01.jpg": "E",
     "02.jpg": "C",
     "03.jpg": "C",
@@ -602,7 +602,7 @@
     "29.jpg": "C",
     "30.jpg": "B"
   },
-  "PT/MAD101 - Test3 - FA 2024": {
+  "PT/MAE101 - Test3 - FA 2024": {
     "01.jpg": "D",
     "02.jpg": "D",
     "03.jpg": "B",
@@ -729,7 +729,7 @@
     "124.jpg": "C",
     "125.jpg": "B"
   },
-  "PT/MAD101 - Test3 - SP 2024": {
+  "PT/MAE101 - Test3 - SP 2024": {
     "01.jpg": "C",
     "02.jpg": "D",
     "03.jpg": "A",
@@ -746,7 +746,7 @@
     "14.jpg": "B",
     "15.jpg": "C"
   },
-  "PT/MAD101 - Test3 - FA 2023": {
+  "PT/MAE101 - Test3 - FA 2023": {
     "01.jpg": "A",
     "02.jpg": "B",
     "03.jpg": "D",
@@ -758,7 +758,7 @@
     "09.jpg": "C",
     "10.jpg": "A"
   },
-  "PT/MAD101 - PT2": {
+  "PT/MAE101 - PT2": {
     "01.jpg": "A",
     "02.jpg": "A",
     "03.jpg": "D",
@@ -776,7 +776,7 @@
     "15.jpg": "A",
     "16.jpg": "A"
   },
-  "PT/MAD101 - Test2 - FA 2023": {
+  "PT/MAE101 - Test2 - FA 2023": {
     "01.jpg": "E",
     "02.jpg": "A",
     "03.jpg": "B",
@@ -793,7 +793,7 @@
     "14.jpg": "A",
     "15.jpg": "A"
   },
-  "PT/MAD101 - PT02 - SP 2024": {
+  "PT/MAE101 - PT02 - SP 2024": {
     "01.jpg": "A"
   }
 }

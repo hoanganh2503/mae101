@@ -20,7 +20,7 @@ function doGet(e) {
     var s = PropertiesService.getScriptProperties().getProperty('LAST_REGRADE') || '{}';
     return jsonp_(p.callback, s);
   }
-  return ContentService.createTextOutput('MAD101 results endpoint OK');
+  return ContentService.createTextOutput('MAE101 results endpoint OK');
 }
 
 function handleSubmit_(d) {

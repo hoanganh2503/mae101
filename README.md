@@ -1,4 +1,4 @@
-# MAD101 — Web thi thử trắc nghiệm (tĩnh, chỉ HTML/JS)
+# MAE101 — Web thi thử trắc nghiệm (tĩnh, chỉ HTML/JS)
 
 Trang web luyện đề trắc nghiệm từ kho đề **FE / PT / RE**. Không cần server: chạy được bằng
 GitHub Pages hoặc mở local. Mỗi đề là một thư mục ảnh câu hỏi (`01.jpg, 02.jpg, …`).
@@ -49,7 +49,7 @@ npx serve .
 Rồi mở http://localhost:8000
 
 ### 3. Admin nhập đáp án
-1. Mở `admin.html` → đăng nhập (mật khẩu mặc định **`mad101`**, đổi trong `assets/app.js`).
+1. Mở `admin.html` → đăng nhập (mật khẩu mặc định **`mae101`**, đổi trong `assets/app.js`).
 2. Chọn Bộ đề → Đề → xem ảnh từng câu, chọn A–E (hoặc dùng "Nhập nhanh").
 3. Bấm **Tải answers.json** → chép file vào thư mục `data/` (đè file cũ) → commit/push.
 4. Lần sau sửa tiếp: bấm **Nhập answers.json** để nạp lại file đã commit rồi sửa.
