@@ -76,7 +76,7 @@ def get_attachment_urls(page, thread_url: str):
     attach_block = scope.query_selector(".message-attachments")
     if not attach_block:
         return []
-    anchors = attach_block.query_selector_all("li.file.file--linked a.file-preview.js-lbImage")
+    anchors = attach_block.query_selector_all("li.file.file--linked a.file-preview")
     urls = []
     for a in anchors:
         href = a.get_attribute("href")
