@@ -106,9 +106,9 @@ function render() {
   wrap.innerHTML = '';
   let shown = 0, total = 0, doneCount = 0;
 
-  const SECTION_LABEL = { FE: 'FE — Đề thi cuối kỳ', PT: 'PT — Progress Test / Quiz', RE: 'RE — Đề thi lại' };
+  const SECTION_LABEL = { FE: 'FE — Đề thi cuối kỳ', PT: 'PT — Progress Test / Quiz', RE: 'RE — Đề thi lại', Unsorted: 'Chưa phân loại' };
 
-  for (const sec of ['FE', 'PT', 'RE']) {
+  for (const sec of ['FE', 'PT', 'RE', 'Unsorted']) {
     const exams = (MANIFEST.sections[sec] || []);
     const cards = [];
     for (const e of exams) {

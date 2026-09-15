@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = __dirname;
-const SECTIONS = ['FE', 'PT', 'RE'];
+const SECTIONS = ['FE', 'PT', 'RE', 'Unsorted'];
 
 function isRealImage(file) {
   const fd = fs.openSync(file, 'r');

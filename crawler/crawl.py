@@ -31,6 +31,11 @@ USER_AGENT = (
 )
 
 INVALID_CHARS = re.compile(r'[\\/:*?"<>|]')
+MARKER_NAME = ".full_ok"
+
+
+class SessionExpired(Exception):
+    pass
 
 
 def sanitize(name: str) -> str:
@@ -71,6 +76,9 @@ def get_thread_list(page, pages: int):
 
 def get_attachment_urls(page, thread_url: str):
     page.goto(thread_url, wait_until="domcontentloaded", timeout=30000)
+    logged_in = page.evaluate("document.documentElement.getAttribute('data-logged-in')")
+    if logged_in != "true":
+        raise SessionExpired()
     first_post = page.query_selector("article.message--post")
     scope = first_post if first_post else page
     attach_block = scope.query_selector(".message-attachments")
@@ -150,37 +158,51 @@ def main():
             exam_dir = out_root / section / safe_name
             print(f"[{i}/{len(threads)}] {section}/{safe_name}")
 
-            attachments = get_attachment_urls(page, thread_url)
+            try:
+                attachments = get_attachment_urls(page, thread_url)
+            except SessionExpired:
+                print("\nMAT PHIEN DANG NHAP giua chung! Dung crawl tai day.")
+                print("Chay lai 'python crawler/login.py' de dang nhap lai, roi chay lai crawl.py")
+                print("(cac de da tai du anh full-res se tu dong duoc bo qua, khong tai lai).")
+                break
             if not attachments:
                 print("  (khong co anh dinh kem - bo qua)")
                 empty_threads.append(title)
                 continue
 
+            marker = exam_dir / MARKER_NAME
             existing = sorted(exam_dir.glob("*.jpg")) if exam_dir.exists() else []
-            if len(existing) == len(attachments):
-                print(f"  da co du {len(existing)} anh, bo qua.")
+            if marker.exists() and len(existing) == len(attachments):
+                print(f"  da co du {len(existing)} anh (full-res), bo qua.")
                 continue
+            if existing:
+                for f in existing:
+                    f.unlink()
 
             exam_dir.mkdir(parents=True, exist_ok=True)
             width = max(2, len(str(len(attachments))))
             ok_count = 0
+            all_full = True
             for idx, (full_url, fallback_url) in enumerate(attachments, start=1):
                 dest = exam_dir / f"{idx:0{width}d}.jpg"
-                if dest.exists() and dest.stat().st_size > 0:
-                    ok_count += 1
-                    continue
                 body, note = download_image(context.request, full_url, fallback_url, thread_url)
                 if body is None:
                     print(f"  cau {idx}: TAI LOI")
                     failures.append(f"{safe_name} #{idx}")
+                    all_full = False
                     continue
                 dest.write_bytes(body)
                 if note:
                     print(f"  cau {idx}: {note}")
+                    all_full = False
                 ok_count += 1
                 total_images += 1
                 time.sleep(args.delay)
             print(f"  da tai {ok_count}/{len(attachments)} anh.")
+            if all_full and ok_count == len(attachments):
+                marker.write_text("ok")
+            else:
+                print("  (chua du chat luong/so luong full-res, se thu lai o lan chay sau)")
 
         browser.close()
 
