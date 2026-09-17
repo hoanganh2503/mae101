@@ -96,6 +96,7 @@
       <div class="spacer"></div>
       <p class="muted small">Dán đáp án rồi chọn cách điền. Ví dụ theo thứ tự: <code>A C B D F ...</code> · theo số: <code>1A 2C 3B</code> hoặc <code>1=A, 2=C</code>.</p>
       <textarea id="bulk" rows="3" placeholder="A C B D A ...  hoặc  1A 2C 3B ..."></textarea>
+      <div class="small muted" id="bulkCount" style="margin-top:4px">0 đáp án</div>
       <div class="spacer"></div>
       <div class="flex">
         <button class="btn" id="bulkSeq">Điền theo thứ tự câu</button>
@@ -233,6 +234,10 @@ function renderEditor() {
   });
 }
 
+function updateBulkCount() {
+  const n = (document.getElementById('bulk').value.trim().split(/\s+/).filter(Boolean)).length;
+  document.getElementById('bulkCount').textContent = `${n} đáp án`;
+}
 function bulkSeq() {
   const exam = currentExam(); if (!exam) return;
   const letters = (document.getElementById('bulk').value.toUpperCase().match(/[A-F]/g) || []);
@@ -361,6 +366,7 @@ async function init() {
   document.getElementById('importFile').addEventListener('change', e => e.target.files[0] && doImport(e.target.files[0]));
   document.getElementById('bulkSeq').addEventListener('click', bulkSeq);
   document.getElementById('bulkNum').addEventListener('click', bulkNum);
+  document.getElementById('bulk').addEventListener('input', updateBulkCount);
   const rgBtn = document.getElementById('regradeBtn');
   if (!RESULTS_ENDPOINT) {
     rgBtn.disabled = true;

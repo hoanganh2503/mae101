@@ -158,6 +158,12 @@ def main():
             exam_dir = out_root / section / safe_name
             print(f"[{i}/{len(threads)}] {section}/{safe_name}")
 
+            marker = exam_dir / MARKER_NAME
+            existing = sorted(exam_dir.glob("*.jpg")) if exam_dir.exists() else []
+            if marker.exists() and existing:
+                print(f"  da co du {len(existing)} anh (full-res), bo qua (khong mo trang, tranh rate-limit).")
+                continue
+
             try:
                 attachments = get_attachment_urls(page, thread_url)
             except SessionExpired:
@@ -165,16 +171,12 @@ def main():
                 print("Chay lai 'python crawler/login.py' de dang nhap lai, roi chay lai crawl.py")
                 print("(cac de da tai du anh full-res se tu dong duoc bo qua, khong tai lai).")
                 break
+            time.sleep(args.delay)
             if not attachments:
                 print("  (khong co anh dinh kem - bo qua)")
                 empty_threads.append(title)
                 continue
 
-            marker = exam_dir / MARKER_NAME
-            existing = sorted(exam_dir.glob("*.jpg")) if exam_dir.exists() else []
-            if marker.exists() and len(existing) == len(attachments):
-                print(f"  da co du {len(existing)} anh (full-res), bo qua.")
-                continue
             if existing:
                 for f in existing:
                     f.unlink()
