@@ -43,7 +43,7 @@
           <label class="small muted">Bộ đề</label><br>
           <select id="section">
             <option value="ALL">Tất cả</option>
-            <option value="FE">FE</option><option value="PT">PT</option><option value="RE">RE</option>
+            <option value="FE">FE</option><option value="PT">PT</option><option value="RE">RE</option><option value="Unsorted">Unsorted</option>
           </select>
         </div>
         <div style="flex:1;min-width:240px">
@@ -151,7 +151,7 @@ function visibleExams() {
   const sec = document.getElementById('section').value;
   const q = document.getElementById('examSearch').value.trim().toLowerCase();
   const onlyMissing = document.getElementById('onlyMissing').checked;
-  const secs = sec === 'ALL' ? ['FE', 'PT', 'RE'] : [sec];
+  const secs = sec === 'ALL' ? ['FE', 'PT', 'RE', 'Unsorted'] : [sec];
   const out = [];
   for (const s of secs) {
     for (const e of (MANIFEST.sections[s] || [])) {
@@ -347,7 +347,7 @@ async function init() {
   }
 
   EXAMS_BY_ID = {};
-  for (const s of ['FE', 'PT', 'RE']) for (const e of (MANIFEST.sections[s] || [])) EXAMS_BY_ID[e.id] = { ...e, section: s };
+  for (const s of ['FE', 'PT', 'RE', 'Unsorted']) for (const e of (MANIFEST.sections[s] || [])) EXAMS_BY_ID[e.id] = { ...e, section: s };
 
   const draft = getJSON(LS_DRAFT, null);
   WORKING = JSON.parse(JSON.stringify(BASE));

@@ -40,7 +40,7 @@
         <div>
           <label class="small muted">Bộ đề</label><br>
           <select id="section">
-            <option value="FE">FE</option><option value="PT">PT</option><option value="RE">RE</option>
+            <option value="FE">FE</option><option value="PT">PT</option><option value="RE">RE</option><option value="Unsorted">Unsorted</option>
           </select>
         </div>
         <div style="flex:1;min-width:260px">
@@ -303,7 +303,7 @@ async function init() {
     try { [MANIFEST, ANSWERS] = await Promise.all([loadManifest(), loadAnswers()]); }
     catch (e) { document.getElementById('questions').innerHTML = `<div class="card">Lỗi tải dữ liệu: ${e.message}</div>`; return; }
     EXAMS_BY_ID = {};
-    for (const s of ['FE', 'PT', 'RE']) for (const e of (MANIFEST.sections[s] || [])) EXAMS_BY_ID[e.id] = { ...e, section: s };
+    for (const s of ['FE', 'PT', 'RE', 'Unsorted']) for (const e of (MANIFEST.sections[s] || [])) EXAMS_BY_ID[e.id] = { ...e, section: s };
 
     document.getElementById('section').addEventListener('change', fillExamSelect);
     document.getElementById('examSearch').addEventListener('input', fillExamSelect);
