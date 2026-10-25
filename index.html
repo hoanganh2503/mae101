@@ -34,6 +34,16 @@
     <p class="muted small" id="modeDesc"></p>
     <button class="btn" id="modeFull" style="width:100%;justify-content:center;margin-bottom:10px">Làm full</button>
     <button class="btn ghost" id="modeRandom" style="width:100%;justify-content:center">🎲 Random ~20 câu (2 câu mỗi 10 câu)</button>
+    <label class="small muted" style="display:flex;align-items:center;gap:8px;margin-top:8px">
+      Hệ số thời gian (random):
+      <select id="modeTimeFactor">
+        <option value="1">x1 (1 phút/câu)</option>
+        <option value="1.25">x1.25</option>
+        <option value="1.5">x1.5</option>
+        <option value="1.75">x1.75</option>
+        <option value="2">x2</option>
+      </select>
+    </label>
     <button class="btn ghost" id="modeCancel" style="width:100%;justify-content:center;margin-top:14px">Huỷ</button>
   </div>
 </div>
@@ -61,10 +71,11 @@ function examCard(exam) {
         : `<span class="badge todo">Chưa làm</span>`);
   const nokey = keyed ? '' : `<span class="badge nokey" title="Admin chưa nhập đáp án">⚠ Chưa có đáp án</span>`;
   const inprogTotal = inprog ? (inprog.total || exam.count) : exam.count;
+  const inprogTf = inprog && inprog.mode === 'r20' ? parseTimeFactor(inprog.timeFactor) : 1;
   const last = done
     ? `<div class="small muted">Lần gần nhất: <b>${p.lastScore}%</b> · ${fmtTime(p.lastTimeSec)} · ${fmtDate(p.lastAt)}${p.attempts>1?` · ${p.attempts} lần`:''}</div>`
     : (inprog
-        ? `<div class="small muted">${inprog.mode==='r20'?'🎲 Random · ':''}Đã chọn ${Object.keys(inprog.picks||{}).length}/${inprogTotal} câu · còn ${fmtTime((inprogTotal*SEC_PER_QUESTION) - (inprog.elapsedSec||0))}</div>`
+        ? `<div class="small muted">${inprog.mode==='r20'?`🎲 Random${inprogTf!==1?` x${inprogTf}`:''} · `:''}Đã chọn ${Object.keys(inprog.picks||{}).length}/${inprogTotal} câu · còn ${fmtTime((inprogTotal*SEC_PER_QUESTION*inprogTf) - (inprog.elapsedSec||0))}</div>`
         : `<div class="small muted">&nbsp;</div>`);
 
   const startHref = `exam.html?exam=${encodeURIComponent(exam.id)}`;
@@ -72,7 +83,7 @@ function examCard(exam) {
   let primaryBtn;
   if (inprog) {
 
-    const m = inprog.mode === 'r20' ? '&mode=r20' : '';
+    const m = inprog.mode === 'r20' ? `&mode=r20&tf=${inprogTf}` : '';
     primaryBtn = `<a class="btn" href="${startHref}${m}">Tiếp tục →</a>`;
   } else if (bigExam) {
 
@@ -157,7 +168,8 @@ function setupModeChooser() {
     if (curId) location.href = `exam.html?exam=${encodeURIComponent(curId)}`;
   });
   btnRand.addEventListener('click', () => {
-    if (curId) location.href = `exam.html?exam=${encodeURIComponent(curId)}&mode=r20`;
+    const tf = parseTimeFactor(document.getElementById('modeTimeFactor').value);
+    if (curId) location.href = `exam.html?exam=${encodeURIComponent(curId)}&mode=r20&tf=${tf}`;
   });
   btnCancel.addEventListener('click', close);
   ov.addEventListener('click', (e) => { if (e.target === ov) close(); });

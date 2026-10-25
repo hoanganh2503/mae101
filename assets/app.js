@@ -126,6 +126,12 @@ function pickDistributed(arr, per, block) {
   return out;
 }
 
+const TIME_FACTORS = [1, 1.25, 1.5, 1.75, 2];
+function parseTimeFactor(v) {
+  const n = Number(v);
+  return TIME_FACTORS.includes(n) ? n : 1;
+}
+
 function fmtTime(sec) {
   sec = Math.max(0, Math.round(sec));
   const m = Math.floor(sec / 60), s = sec % 60;

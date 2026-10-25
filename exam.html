@@ -71,6 +71,7 @@ const params = new URLSearchParams(location.search);
 const EXAM_ID = params.get('exam');
 const REVIEW = params.get('review') === '1';
 const MODE = params.get('mode');
+let TIME_FACTOR = MODE === 'r20' ? parseTimeFactor(params.get('tf')) : 1;
 
 let MANIFEST, ANSWERS, EXAM, KEY;
 const picks = {};
@@ -158,6 +159,7 @@ function saveState() {
     leaveCount,
     total: EXAM.count,
     mode: MODE === 'r20' ? 'r20' : 'full',
+    timeFactor: TIME_FACTOR,
     subset: EXAM.images.slice(),
     savedAt: new Date().toISOString(),
   });
@@ -252,7 +254,7 @@ function gradeAndShow(timeSec, persist, byLeaving) {
   });
 
   const score = pct(correct, EXAM.count);
-  const modeStr = (MODE === 'r20' ? `Random ${EXAM.count} câu` : 'Full')
+  const modeStr = (MODE === 'r20' ? `Random ${EXAM.count} câu` + (TIME_FACTOR !== 1 ? ` · x${TIME_FACTOR} thời gian` : '') : 'Full')
     + (byLeaving ? ` · ⚠ tự nộp do rời trang ${leaveCount} lần` : '')
     + (!byLeaving && leaveCount ? ` · ⚠ rời trang ${leaveCount} lần` : '');
 
@@ -344,17 +346,18 @@ function submit() {
     let subset;
     if (savedState && savedState.mode === 'r20' && Array.isArray(savedState.subset) && savedState.subset.length) {
       subset = savedState.subset.filter(im => fullImages.includes(im));
+      if (savedState.timeFactor) TIME_FACTOR = parseTimeFactor(savedState.timeFactor);
     }
     if (!subset || !subset.length) subset = pickDistributed(fullImages, 2, 10);
     EXAM.images = subset;
     EXAM.count = subset.length;
   }
 
-  TOTAL_SEC = EXAM.count * SEC_PER_QUESTION;
+  TOTAL_SEC = EXAM.count * SEC_PER_QUESTION * TIME_FACTOR;
 
   document.getElementById('title').textContent = EXAM.name;
   const modeNote = (MODE === 'r20' && !REVIEW) ? ` · 🎲 Random ${EXAM.count} câu (2 câu/10 câu)` : '';
-  document.getElementById('subtitle').textContent = `${EXAM.section} · ${EXAM.count} câu${modeNote} · ⏱ ${fmtTime(TOTAL_SEC)} (${SEC_PER_QUESTION/60} phút/câu)` +
+  document.getElementById('subtitle').textContent = `${EXAM.section} · ${EXAM.count} câu${modeNote} · ⏱ ${fmtTime(TOTAL_SEC)} (${SEC_PER_QUESTION * TIME_FACTOR / 60} phút/câu)` +
     (Object.keys(KEY).length ? '' : ' · ⚠ chưa có đáp án');
 
   const qWrap = document.getElementById('questions');
