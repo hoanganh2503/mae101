@@ -245,11 +245,12 @@ function gradeAndShow(timeSec, persist, byLeaving) {
     if (pick === ans) {
       correct++; card.classList.add('correct'); nav.classList.remove('answered'); nav.classList.add('correct');
       mark.innerHTML = '<span style="color:var(--green)">✓ Đúng</span>';
-    } else {
+    } else if (pick) {
       card.classList.add('wrong'); nav.classList.remove('answered'); nav.classList.add('wrong');
-      mark.innerHTML = pick
-        ? `<span style="color:var(--red)">✗ Sai (bạn chọn ${pick}, đúng là ${ans})</span>`
-        : `<span style="color:var(--red)">Bỏ trống (đúng là ${ans})</span>`;
+      mark.innerHTML = `<span style="color:var(--red)">✗ Sai (bạn chọn ${pick}, đúng là ${ans})</span>`;
+    } else {
+      card.classList.add('blank'); nav.classList.add('blank');
+      mark.innerHTML = `<span style="color:var(--amber)">○ Bỏ trống (đúng là ${ans})</span>`;
     }
   });
 

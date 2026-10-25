@@ -97,6 +97,7 @@ th { color: var(--muted); font-weight: 600; }
 .qcard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; margin-bottom: 18px; }
 .qcard.correct { border-color: var(--green); }
 .qcard.wrong { border-color: var(--red); }
+.qcard.blank { border-color: var(--amber); }
 .qcard .qhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .qnum { font-weight: 800; }
 .qimg { width: 100%; border-radius: 8px; background: #fff; display: block; }
@@ -136,6 +137,7 @@ th { color: var(--muted); font-weight: 600; }
 .navgrid a.answered { background: var(--primary); color: #fff; border-color: var(--primary); }
 .navgrid a.correct { background: var(--green); color: #fff; border-color: var(--green); }
 .navgrid a.wrong { background: var(--red); color: #fff; border-color: var(--red); }
+.navgrid a.blank { background: var(--amber); color: #fff; border-color: var(--amber); }
 
 .timer { font-variant-numeric: tabular-nums; font-weight: 800; font-size: 18px; }
 .scorebox { text-align: center; padding: 8px 0; }

@@ -58,17 +58,12 @@
       <div class="muted small" id="examCountInfo" style="margin-top:4px"></div>
 
       
-      <div id="cutBox" style="display:none">
+      <div id="cutBox">
         <div class="spacer"></div>
-        <label class="small muted">Cách làm của học viên</label><br>
-        <label class="small"><input type="radio" name="cutMode" value="full" checked> Full đề</label>
-        <label class="small" style="margin-left:14px"><input type="radio" name="cutMode" value="cut"> Cắt đề (chỉ một số câu)</label>
-        <div id="cutList" style="display:none;margin-top:8px">
-          <label class="small muted">Danh sách ảnh câu học viên đã làm</label>
-          <textarea id="imgs" rows="3" placeholder='Dán list ảnh… vd: ["01.jpg","02.jpg","11.jpg"]  hoặc  01.jpg 02.jpg 11.jpg'></textarea>
-          <div class="muted small" style="margin-top:6px">Thứ tự ảnh chính là thứ tự câu của học viên. Đáp án bên dưới sẽ dò theo đúng thứ tự này.</div>
-          <div class="small" id="imgsInfo" style="margin-top:4px"></div>
-        </div>
+        <label class="small muted">🎲 Đề random? Dán danh sách ảnh câu học viên đã làm (để trống = full đề)</label>
+        <textarea id="imgs" rows="2" placeholder='vd: ["001.jpg","004.jpg","016.jpg"]  hoặc  001.jpg 004.jpg 016.jpg'></textarea>
+        <div class="muted small" style="margin-top:6px">Thứ tự ảnh chính là thứ tự câu của học viên. Đáp án bên dưới sẽ dò theo đúng thứ tự này.</div>
+        <div class="small" id="imgsInfo" style="margin-top:4px"></div>
       </div>
 
       <div class="spacer"></div>
@@ -161,15 +156,12 @@ function updateCover() {
 }
 
 
-function isBigExam(ex) { return !!ex && ex.count > 100; }
-function cutMode() { return document.querySelector('input[name="cutMode"]:checked').value; }
+function cutMode() {
+  return parseImageList(document.getElementById('imgs').value).length ? 'cut' : 'full';
+}
 
 
 function onExamChange() {
-  const ex = currentExam();
-  document.getElementById('cutBox').style.display = isBigExam(ex) ? 'block' : 'none';
-  document.getElementById('cutList').style.display =
-    (isBigExam(ex) && cutMode() === 'cut') ? 'block' : 'none';
   updateCover();
   updateImgsInfo();
 }
@@ -182,7 +174,7 @@ function parseImageList(text) {
 
 function activeImages(ex) {
   if (!ex) return [];
-  if (!isBigExam(ex) || cutMode() === 'full') return ex.images;
+  if (cutMode() === 'full') return ex.images;
   const byLower = {};
   ex.images.forEach(im => byLower[im.toLowerCase()] = im);
   return parseImageList(document.getElementById('imgs').value)
@@ -193,7 +185,7 @@ function activeImages(ex) {
 function updateImgsInfo() {
   const el = document.getElementById('imgsInfo');
   const ex = currentExam();
-  if (!ex || !isBigExam(ex) || cutMode() === 'full') { el.textContent = ''; return; }
+  if (!ex || cutMode() === 'full') { el.textContent = ''; return; }
   const raw = parseImageList(document.getElementById('imgs').value);
   const ok = activeImages(ex);
   const bad = raw.length - ok.length;
@@ -251,16 +243,16 @@ function grade() {
     if (ok) correct++;
 
 
-    navCls[i] = !ans ? (pick ? 'answered' : '') : (ok ? 'correct' : 'wrong');
+    navCls[i] = !ans ? (pick ? 'answered' : '') : (ok ? 'correct' : (pick ? 'wrong' : 'blank'));
 
     let mark;
     if (!ans) mark = '<span class="muted">— chưa có đáp án</span>';
     else if (ok) mark = '<span style="color:var(--green)">✓ Đúng</span>';
     else mark = pick
       ? `<span style="color:var(--red)">✗ Sai (chọn ${pick}, đúng là ${ans})</span>`
-      : `<span style="color:var(--red)">Bỏ trống (đúng là ${ans})</span>`;
+      : `<span style="color:var(--amber)">○ Bỏ trống (đúng là ${ans})</span>`;
 
-    const cardCls = !ans ? '' : (ok ? 'correct' : 'wrong');
+    const cardCls = !ans ? '' : (ok ? 'correct' : (pick ? 'wrong' : 'blank'));
 
     const orig = TOTAL === ex.count ? '' :
       ` <span class="muted">(đề: câu ${ex.images.indexOf(img) + 1})</span>`;
@@ -291,7 +283,7 @@ function grade() {
        </div>`
     : `<div class="small" style="color:var(--amber)">Đề này chưa nhập đáp án nên chưa chấm được. Vào <a href="admin.html">Quản lý đáp án</a> để đặt trước.</div>`)
     + `<div class="spacer"></div>
-       <div class="muted small" style="margin-bottom:6px">Ma trận câu <span style="color:var(--green)">■ đúng</span> · <span style="color:var(--red)">■ sai</span></div>
+       <div class="muted small" style="margin-bottom:6px">Ma trận câu <span style="color:var(--green)">■ đúng</span> · <span style="color:var(--red)">■ sai</span> · <span style="color:var(--amber)">■ bỏ trống</span></div>
        <div class="navgrid">${navHtml}</div>`;
 
   document.getElementById('questions').innerHTML = cards;
@@ -308,8 +300,6 @@ async function init() {
     document.getElementById('section').addEventListener('change', fillExamSelect);
     document.getElementById('examSearch').addEventListener('input', fillExamSelect);
     document.getElementById('exam').addEventListener('change', onExamChange);
-    document.querySelectorAll('input[name="cutMode"]')
-      .forEach(r => r.addEventListener('change', onExamChange));
     document.getElementById('imgs').addEventListener('input', updateImgsInfo);
     document.getElementById('gradeBtn').addEventListener('click', grade);
     document.getElementById('clearBtn').addEventListener('click', () => {
